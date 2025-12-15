@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         Universal VLM Picker (Fixed & Enhanced)
+// @name         Universal VLM Picker
 // @namespace    http://tampermonkey.net/
-// @version      5.0
+// @version      5.1
 // @description  VLM 截图翻译插件：强力 Base64 模式、支持直链/代理模式、移动端适配、思考过程显示
 // @author       Nanaka & Gemini 3 Pro
 // @homepage     https://config.810114.xyz/
@@ -233,7 +233,7 @@
                 <div class="full-width">${mkInput("API Endpoint", "endpoint")}</div>
                 <div class="full-width">${mkInput("API Key", "api_key", "password")}</div>
                 <label><a href="https://cloud.siliconflow.cn/i/sRO0U8o0" target="_blank">👉 没有 API Key？点我注册硅基流动 (Aff)</a></label>
-                <label><a href="https://example.com" target="_blank">📚 查看使用教程 (Tutorial)</a></label>
+                <label><a href="https://page.moonchan.xyz/?url=https://pastebin.com/raw/URBkDjwY#markdown-parser" target="_blank">📚 查看API申请教程 (Tutorial)</a></label>
             </div>
 
             <div class="section-title">模型参数</div>
