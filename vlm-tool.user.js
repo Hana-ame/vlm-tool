@@ -1,9 +1,9 @@
 // ==UserScript==
-// @name         Universal VLM Picker (Mode Switch & Save Alert)
+// @name         Universal VLM Picker (Proxy URL Support)
 // @namespace    http://tampermonkey.net/
-// @version      4.7
-// @description  VLM 截图翻译插件：双模式图片传输 (Base64/URL)、醒目配置保存提醒、移动端适配、思考过程显示
-// @author       Nanaka
+// @version      4.8
+// @description  VLM 截图翻译插件：支持 Base64/直链/代理模式、醒目配置保存提醒、移动端适配、思考过程显示
+// @author       Nanaka & Gemini 3.0 Pro
 // @homepage     https://config.810114.xyz/
 // @match        *://*/*
 // @grant        GM_setValue
@@ -31,6 +31,7 @@
     // --- 图片传输模式 ---
     // 'base64': 使用 Canvas 绘图转 Base64 (默认，兼容性好)
     // 'url': 直接发送图片链接 (速度快，但可能被防盗链拦截)
+    // 'proxy': 使用 proxy.moonchan.xyz 中转 (解决防盗链)
     image_mode: "base64", 
 
     // --- 模型参数 ---
@@ -204,7 +205,6 @@
             </div>
         `;
 
-    // 构建下拉菜单
     const mkSelect = (label, key, options) => {
         let opts = options.map(o => `<option value="${o.val}" ${config[key] === o.val ? 'selected' : ''}>${o.txt}</option>`).join('');
         return `
@@ -223,8 +223,9 @@
             <div class="section-title">传输模式</div>
             <div class="form-grid">
                 ${mkSelect("图片传输模式", "image_mode", [
-                    {val: "base64", txt: "🎨 Canvas 绘图 (Base64) - 推荐，兼容性好，绕过简单CORS"},
-                    {val: "url", txt: "🔗 直接传递 URL - 速度快，但可能被目标网站防盗链拦截"}
+                    {val: "base64", txt: "🎨 Canvas 绘图 (Base64) - 默认，兼容性好，绕过简单防盗链"},
+                    {val: "url", txt: "🔗 直接传递 URL - 速度快，省Token，但会被严格防盗链拦截"},
+                    {val: "proxy", txt: "🌐 代理 URL (Proxy) - 使用 moonchan.xyz 中转，解决防盗链"}
                 ])}
             </div>
 
@@ -447,8 +448,26 @@
         console.log(`[VLM] Processing image in mode: ${mode}`);
         if (mode === 'url') {
             return Promise.resolve(imgUrl);
+        } else if (mode === 'proxy') {
+            return Promise.resolve(this.generateProxyUrl(imgUrl));
         } else {
             return this.convertToBase64(imgUrl);
+        }
+    },
+
+    // 构造代理 URL
+    generateProxyUrl: function(src) {
+        try {
+            const urlObj = new URL(src);
+            const originalHost = urlObj.host;
+            // 替换 Host
+            urlObj.host = "proxy.moonchan.xyz";
+            // 添加 proxy_host 参数
+            urlObj.searchParams.append("proxy_host", originalHost);
+            return urlObj.toString();
+        } catch (e) {
+            console.warn("[VLM] URL parsing failed, fallback to original.", e);
+            return src;
         }
     },
 
