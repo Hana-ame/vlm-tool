@@ -1,12 +1,11 @@
 // ==UserScript==
-// @name         Universal VLM Picker (Mobile Fixed)
+// @name         Universal VLM Picker
 // @namespace    http://tampermonkey.net/
-// @version      4.5
-// @description  VLM 截图翻译插件：支持流式输出、Markdown 渲染、自定义结果框样式 (修复移动端点击不灵敏问题)
+// @version      4.6
+// @description  VLM 截图翻译插件：支持流式输出、Markdown 渲染、显示思考过程 (Reasoning)、去除不安全权限
 // @author       Nanaka
 // @homepage     https://config.810114.xyz/
 // @match        *://*/*
-// @connect      *
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_registerMenuCommand
@@ -30,7 +29,7 @@
     api_key: "",
 
     // --- 模型参数 ---
-    model: "Qwen/Qwen3-VL-32B-Instruct",
+    model: "Qwen/Qwen3-VL-32B-Instruct", // 建议使用支持 Reasoning 的模型
     system_prompt:
       "你需要扮演一位从事文化产品的的专业翻译人员，目前将日文文本翻译到中文文本，你需要翻译用户提供的日文内容到中文。\n日文漫画的阅读顺序是从右到左，从上到下。输出内容也应该先右上，后左下。\n在整理语序以及之后的输出时也应如此。\n给出的文本会出现一句话分成多个段落，译文时需要结合上下文，结合多个段落，结合同一个人发言的连贯性，前后句子之间应体现因果逻辑关系。\n也要注意不同人发言的对话性。需要语句通顺，形成前后文的因果逻辑关系，有对话口语风格。\n日文存在在对话中省略前因后果的现象，先推理前因后果，使得逻辑明确之后，再按照事实还原对话内容。\n日文存在在对话中省主语的现象，如果推理有问题，则考虑是否主语有问题。\nエロ漫画中存在较多口语用词，网络用词，粗俗语等。需要识别某些句子是否符合这些条件。\n文本倾向于小说对话内容，使得读者要有代入感。需要明晰对话发生的背景，讲述的内容足够清晰，使用符合语境的用词，充分调动读者的性爱情绪。\n先分析一下发生情景，再在输出文本中给出较为细节的步骤。\n并且翻译出来的文本需要按照一行一列，一段一个气泡的格式输出。并且输出的段落先后顺序符合阅读顺序。\n翻译完成过后，需要进行语言润色。文本倾向于意译，不必完全贴合原文句式，但也要尽力贴合原文表达出的意思，但更着重中文译文文本的阅读体验。\n以上所有内容必须结合图片，以图片内容为准。\n对于每一个对话气泡，翻译的内容必须按照\n日文原文内容\n/\n中文译文\n\n的方式输出，不要添加其他任何格式和原文中不存在的符号。\n并且，每个段落之间应有可分辨的分段信息。\n\n写出完整详细的思考过程，可以包含识别文字，识别口语用语，识别语气词，还原逻辑，纠错文字，补充主语，写出因果关系，补足其他句子成分，调整语序，最终语言润色等步骤。输出格式为纯文本。",
     max_tokens: 4096,
@@ -55,13 +54,12 @@
   function enableDrag(element, handle, onTap) {
     let startX, startY, initLeft, initTop;
     let isDragging = false;
-    // 触屏判断阈值：手指移动超过 10px 才算拖拽，否则算点击
     const TOUCH_THRESHOLD = 10;
     const MOUSE_THRESHOLD = 5;
 
     // --- 鼠标事件逻辑 (PC) ---
     handle.addEventListener("mousedown", (e) => {
-      if (e.button !== 0) return; // 只响应左键
+      if (e.button !== 0) return;
       isDragging = false;
       startX = e.clientX;
       startY = e.clientY;
@@ -90,21 +88,17 @@
 
       window.addEventListener("mousemove", onMove);
       window.addEventListener("mouseup", onUp);
-      // 防止文字被选中
-      // e.preventDefault(); 
     });
 
     // --- 触摸事件逻辑 (Mobile) ---
     handle.addEventListener("touchstart", (e) => {
-      if (e.touches.length > 1) return; // 忽略多指触控
+      if (e.touches.length > 1) return;
       isDragging = false;
       const t = e.touches[0];
       startX = t.clientX;
       startY = t.clientY;
       initLeft = element.offsetLeft;
       initTop = element.offsetTop;
-      // 这里不 preventDefault，否则可能影响点击判定，
-      // 只有在确定是拖拽时才 preventDefault
     }, { passive: false });
 
     handle.addEventListener("touchmove", (e) => {
@@ -112,13 +106,11 @@
       const dx = t.clientX - startX;
       const dy = t.clientY - startY;
 
-      // 判断移动距离是否超过阈值
       if (!isDragging && (Math.abs(dx) > TOUCH_THRESHOLD || Math.abs(dy) > TOUCH_THRESHOLD)) {
         isDragging = true;
       }
 
       if (isDragging) {
-        // 只有确认是拖拽时，才阻止默认行为(滚动)
         if (e.cancelable) e.preventDefault();
         element.style.left = initLeft + dx + "px";
         element.style.top = initTop + dy + "px";
@@ -126,11 +118,9 @@
     }, { passive: false });
 
     handle.addEventListener("touchend", (e) => {
-      // 如果没有发生过拖拽，视为点击
       if (!isDragging) {
         if (onTap) {
           onTap(e);
-          // 阻止触发后续的模拟鼠标点击(ghost click)
           if(e.cancelable) e.preventDefault();
         }
       }
@@ -260,10 +250,11 @@
   }
 
   // =========================================================
-  // 模块 2: 结果显示框 (适配移动端)
+  // 模块 2: 结果显示框 (支持 Reasoning 内容)
   // =========================================================
   const DisplayBox = {
     element: null,
+    reasoningElement: null,
     contentElement: null,
 
     init: function () {
@@ -272,7 +263,6 @@
       this.element.id = "vlm-result-box";
 
       const header = document.createElement("div");
-      // 使用 touch-action: none 确保在标题栏上触摸不会触发页面滚动
       header.style.cssText =
         "display: flex; justify-content: space-between; align-items: left; padding: 10px; background: rgba(255,255,255,0.1); border-bottom: 1px solid rgba(255,255,255,0.1); cursor: move; touch-action: none; user-select: none;";
       header.innerHTML =
@@ -280,9 +270,8 @@
 
       const closeBtn = document.createElement("span");
       closeBtn.textContent = "✖";
-      closeBtn.style.cssText = "cursor: pointer; font-size: 16px; padding: 0 10px;"; // 增大触控区域
+      closeBtn.style.cssText = "cursor: pointer; font-size: 16px; padding: 0 10px;";
       
-      // 这里的停止冒泡很重要，否则点击关闭可能被识别为拖拽标题栏
       const closeAction = (e) => {
           e.stopPropagation();
           this.hide();
@@ -291,18 +280,26 @@
       closeBtn.addEventListener("touchend", closeAction);
       
       header.appendChild(closeBtn);
-
       this.element.appendChild(header);
 
+      // --- 滚动容器 ---
+      const scrollContainer = document.createElement("div");
+      scrollContainer.style.cssText = "padding: 10px; overflow-y: auto; height: calc(100% - 40px); -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; gap: 10px;";
+
+      // 1. 思考过程容器
+      this.reasoningElement = document.createElement("div");
+      this.reasoningElement.className = "vlm-reasoning";
+      this.reasoningElement.style.display = "none"; // 默认隐藏，有内容时显示
+      scrollContainer.appendChild(this.reasoningElement);
+
+      // 2. 正文容器
       this.contentElement = document.createElement("div");
       this.contentElement.className = "vlm-markdown-content";
-      this.contentElement.style.cssText =
-        "padding: 10px; overflow-y: auto; height: calc(100% - 40px); -webkit-overflow-scrolling: touch;"; 
-      this.element.appendChild(this.contentElement);
+      scrollContainer.appendChild(this.contentElement);
 
+      this.element.appendChild(scrollContainer);
       document.body.appendChild(this.element);
 
-      // 启用拖拽，无点击回调
       enableDrag(this.element, header, null);
     },
 
@@ -311,7 +308,6 @@
 
       this.element.style.position = "fixed";
       this.element.style.zIndex = "2147483647";
-      // 适配移动端：设置最大宽高
       this.element.style.width = config.box_width + "px";
       this.element.style.maxWidth = "95vw"; 
       this.element.style.height = config.box_height + "px";
@@ -327,7 +323,7 @@
       this.element.style.backdropFilter = "blur(5px)";
       this.element.style.textAlign = "left";
 
-      // Markdown 样式
+      // Styles
       const css = `
                 .vlm-markdown-content p { margin: 0 0 10px 0; line-height: 1.5; }
                 .vlm-markdown-content strong { color: #4fc3f7; }
@@ -335,6 +331,26 @@
                 .vlm-markdown-content pre { background: rgba(0,0,0,0.3); padding: 10px; border-radius: 5px; overflow-x: auto; }
                 .vlm-markdown-content ul, .vlm-markdown-content ol { padding-left: 20px; }
                 .vlm-markdown-content hr { border: 0; border-top: 1px solid rgba(255,255,255,0.2); margin: 10px 0; }
+                
+                /* Reasoning Style */
+                .vlm-reasoning {
+                    background: rgba(255, 255, 255, 0.05);
+                    border-left: 3px solid #FF9800;
+                    padding: 8px;
+                    margin-bottom: 10px;
+                    border-radius: 4px;
+                    font-size: 0.9em;
+                    color: #aaa;
+                }
+                .vlm-reasoning-title {
+                    font-weight: bold;
+                    margin-bottom: 5px;
+                    color: #FF9800;
+                    display: block;
+                    font-size: 0.85em;
+                    text-transform: uppercase;
+                }
+
                 @media (max-width: 600px) {
                     .vlm-markdown-content { font-size: 13px; }
                 }
@@ -350,11 +366,10 @@
 
     show: function (fabRect, config) {
       this.applyConfig(config);
-
+      
       const boxW = Math.min(config.box_width, window.innerWidth * 0.95);
       const boxH = Math.min(config.box_height, window.innerHeight * 0.9);
       
-      // 简单的智能定位
       let left = fabRect.left - boxW - 20;
       let top = fabRect.top - boxH + fabRect.height;
 
@@ -371,16 +386,34 @@
       this.element.style.left = left + "px";
       this.element.style.top = top + "px";
       this.element.style.display = "block";
-      this.contentElement.innerHTML =
-        '<div style="opacity:0.6;">⏳ Waiting for stream...</div>';
-      this.contentElement.scrollTop = 0;
+
+      // Reset contents
+      this.reasoningElement.style.display = "none";
+      this.reasoningElement.innerHTML = "";
+      this.contentElement.innerHTML = '<div style="opacity:0.6;">⏳ Waiting for stream...</div>';
+      this.element.querySelector('div[style*="overflow-y"]').scrollTop = 0;
+    },
+
+    updateReasoning: function(text) {
+        if (!this.reasoningElement) return;
+        if (!text) return;
+        
+        // 当有内容时才显示容器
+        this.reasoningElement.style.display = "block";
+        // 简单渲染，保留换行
+        this.reasoningElement.innerHTML = `<span class="vlm-reasoning-title">🧠 Thinking Process</span><div style="white-space: pre-wrap;">${text}</div>`;
+        
+        // 自动滚动 (仅当接近底部时)
+        const container = this.element.querySelector('div[style*="overflow-y"]');
+        if (container) container.scrollTop = container.scrollHeight;
     },
 
     updateContent: function (markdownText) {
         if (!this.contentElement) return;
         const html = marked.parse(markdownText);
         this.contentElement.innerHTML = html;
-        this.contentElement.scrollTop = this.contentElement.scrollHeight;
+        const container = this.element.querySelector('div[style*="overflow-y"]');
+        if (container) container.scrollTop = container.scrollHeight;
     },
 
     hide: function () {
@@ -389,63 +422,57 @@
   };
 
   // =========================================================
-  // 模块 3: 核心逻辑
+  // 模块 3: 图片处理 (安全模式)
   // =========================================================
 
-  function injectStyles() {
-    if (document.getElementById("vlm-vanilla-styles")) return;
-    const css = `
-            #vlm-fab { position: fixed; width: 50px; height: 50px; background: #333; color: white; border-radius: 50%; z-index: 2147483646; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 24px; border: 2px solid rgba(255,255,255,0.2); transition: transform 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.3); touch-action: none; user-select: none; }
-            #vlm-fab:active { transform: scale(0.95); }
-            #vlm-fab.active { background-color: #F44336; border-color: white; }
-            #vlm-fab.processing { background-color: #FF9800; cursor: wait; }
-            .vlm-picking-mode { cursor: crosshair !important; }
-            .vlm-target-highlight { outline: 5px solid #F44336 !important; outline-offset: -2px; z-index: 2147483645; }
-        `;
-    const style = document.createElement("style");
-    style.id = "vlm-vanilla-styles";
-    style.textContent = css;
-    document.head.appendChild(style);
-  }
-
   const ImageProcessor = {
-    convertToWebP: function (srcUrl) {
-       return new Promise((resolve, reject) => {
-        GM_xmlhttpRequest({
-          method: "GET",
-          url: srcUrl,
-          responseType: "blob",
-          onload: function (response) {
-            if (response.status === 200) {
-              const blob = response.response;
-              const img = new Image();
-              img.onload = function () {
-                const canvas = document.createElement("canvas");
-                canvas.width = img.width;
-                canvas.height = img.height;
-                const ctx = canvas.getContext("2d");
-                ctx.drawImage(img, 0, 0);
-                try {
-                  const base64 = canvas.toDataURL("image/webp", 0.8);
-                  URL.revokeObjectURL(img.src);
-                  resolve(base64);
-                } catch (e) {
-                  reject(e);
-                }
-              };
-              img.onerror = () => reject(new Error("Image load failed"));
-              img.src = URL.createObjectURL(blob);
-            } else {
-              reject(new Error("Download failed: " + response.status));
-            }
-          },
-          onerror: (err) => reject(err),
-        });
+    // 尝试获取图片的 Base64，如果跨域失败则返回原始 URL
+    getImagePayload: function (imgUrl) {
+      return new Promise((resolve) => {
+        // 创建新图片对象以尝试 Canvas 转换
+        const img = new Image();
+        img.crossOrigin = "Anonymous"; // 尝试跨域请求
+        
+        // 设置超时，防止图片加载过慢卡住
+        const timer = setTimeout(() => {
+            console.warn("Image load timeout, falling back to URL.");
+            resolve(imgUrl); 
+        }, 3000);
+
+        img.onload = function () {
+          clearTimeout(timer);
+          try {
+            const canvas = document.createElement("canvas");
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0);
+            // 尝试导出 Data URL
+            const base64 = canvas.toDataURL("image/webp", 0.8);
+            console.log("Canvas conversion successful.");
+            resolve(base64);
+          } catch (e) {
+            // 安全错误 (Tainted Canvas)，说明图片不支持 CORS
+            console.warn("CORS restricted image, sending URL directly to API.", e);
+            resolve(imgUrl);
+          }
+        };
+
+        img.onerror = function () {
+          clearTimeout(timer);
+          console.warn("Image load failed, sending URL directly.");
+          resolve(imgUrl);
+        };
+
+        img.src = imgUrl;
       });
     },
   };
 
-  async function sendStreamRequest(config, base64Image) {
+  // =========================================================
+  // 模块 4: 网络请求 (处理 Reasoning)
+  // =========================================================
+  async function sendStreamRequest(config, imagePayload) {
     const payload = {
       model: config.model,
       max_tokens: config.max_tokens,
@@ -459,15 +486,29 @@
         { role: "system", content: config.system_prompt },
         {
           role: "user",
-          content: [{ type: "image_url", image_url: { url: base64Image } }],
+          content: [
+              { 
+                  type: "image_url", 
+                  image_url: { 
+                      url: imagePayload // 可能是 Base64 也可能是 URL 字符串
+                  } 
+              }
+          ],
         },
       ],
     };
 
+    let currentReasoning = "";
     let currentContent = "";
     let buffer = "";
 
     try {
+      // 使用 GM_xmlhttpRequest 进行跨域 API 请求，或者 fetch (取决于 API 是否允许 CORS)
+      // 如果 API 允许跨域 (如 SiliconFlow)，可以用 fetch。
+      // 为保证兼容性，这里我们使用 fetch。用户脚本管理器会自动处理 fetch 的简单跨域，
+      // 如果需要更高级权限，通常 API KEY 就能解决。
+      // *注意*：如果 API 域名不同，Tampermonkey 第一次会询问用户是否允许连接该 API 域名。
+      
       const response = await fetch(config.endpoint, {
         method: "POST",
         headers: {
@@ -504,7 +545,17 @@
               const json = JSON.parse(jsonStr);
               if (json.choices && json.choices.length > 0) {
                 const delta = json.choices[0].delta;
-                if (delta && delta.content) {
+                
+                // 1. 处理 Reasoning (思考过程)
+                // 常见的字段名：reasoning_content (DeepSeek/SiliconFlow), reasoning
+                const reasoningChunk = delta.reasoning_content || delta.reasoning;
+                if (reasoningChunk) {
+                    currentReasoning += reasoningChunk;
+                    DisplayBox.updateReasoning(currentReasoning);
+                }
+
+                // 2. 处理 Content (正文)
+                if (delta.content) {
                   currentContent += delta.content;
                   DisplayBox.updateContent(currentContent);
                 }
@@ -515,11 +566,31 @@
       }
     } catch (err) {
       console.error("Fetch Error:", err);
-      DisplayBox.updateContent(`**Network Error:** ${err.message}`);
+      DisplayBox.updateContent(`**Network Error:** ${err.message}\n\n*Check if your API Key is correct and the endpoint allows CORS.*`);
     } finally {
       Picker.updateBtnState("idle", "👁️");
       Picker.isProcessing = false;
     }
+  }
+
+  // =========================================================
+  // 模块 5: 核心逻辑
+  // =========================================================
+
+  function injectStyles() {
+    if (document.getElementById("vlm-vanilla-styles")) return;
+    const css = `
+            #vlm-fab { position: fixed; width: 50px; height: 50px; background: #333; color: white; border-radius: 50%; z-index: 2147483646; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 24px; border: 2px solid rgba(255,255,255,0.2); transition: transform 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.3); touch-action: none; user-select: none; }
+            #vlm-fab:active { transform: scale(0.95); }
+            #vlm-fab.active { background-color: #F44336; border-color: white; }
+            #vlm-fab.processing { background-color: #FF9800; cursor: wait; }
+            .vlm-picking-mode { cursor: crosshair !important; }
+            .vlm-target-highlight { outline: 5px solid #F44336 !important; outline-offset: -2px; z-index: 2147483645; }
+        `;
+    const style = document.createElement("style");
+    style.id = "vlm-vanilla-styles";
+    style.textContent = css;
+    document.head.appendChild(style);
   }
 
   const Picker = {
@@ -588,9 +659,11 @@
         const fabRect = fab.getBoundingClientRect();
         DisplayBox.show(fabRect, config);
 
-        ImageProcessor.convertToWebP(src)
-          .then((base64) => {
-            sendStreamRequest(config, base64);
+        // 使用新的图片处理逻辑
+        ImageProcessor.getImagePayload(src)
+          .then((payload) => {
+            // payload 可能是 Base64 (如果CORS允许) 或 URL字符串 (如果CORS不允许)
+            sendStreamRequest(config, payload);
           })
           .catch((err) => {
             DisplayBox.updateContent(
@@ -617,9 +690,7 @@
     fab.style.top = window.innerHeight - 150 + "px";
     document.body.appendChild(fab);
 
-    // 绑定拖拽逻辑
     enableDrag(fab, fab, (e) => {
-        // 点击回调 (Tap)
         if (!Picker.isProcessing)
           Picker.isActive ? Picker.disable() : Picker.enable();
     });
