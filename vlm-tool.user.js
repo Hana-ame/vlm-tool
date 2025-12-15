@@ -1,15 +1,16 @@
 // ==UserScript==
-// @name         Universal VLM Picker (Strict Base64)
+// @name         Universal VLM Picker (Fixed & Enhanced)
 // @namespace    http://tampermonkey.net/
-// @version      4.9
-// @description  VLM 截图翻译插件：强力 Base64 模式 (GM_xhr)、支持直链/代理模式、移动端适配、思考过程显示
-// @author       Nanaka
+// @version      5.0
+// @description  VLM 截图翻译插件：强力 Base64 模式、支持直链/代理模式、移动端适配、思考过程显示
+// @author       Nanaka & Gemini 3 Pro
 // @homepage     https://config.810114.xyz/
 // @match        *://*/*
 // @connect      *
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_registerMenuCommand
+// @grant        GM_openInTab
 // @grant        GM_xmlhttpRequest
 // @require      https://cdn.jsdelivr.net/npm/marked/marked.min.js
 // @updateURL    https://config.810114.xyz/vlm-tool.user.js
@@ -30,10 +31,10 @@
     api_key: "",
 
     // --- 图片传输模式 ---
-    // 'base64': 使用 GM_xmlhttpRequest 下载并转 Base64 (最强力，解决CORS)
-    // 'url': 直接发送图片链接 (速度快，但可能被防盗链拦截)
-    // 'proxy': 使用 proxy.moonchan.xyz 中转 (解决防盗链)
-    image_mode: "base64", 
+    // 'base64': 强力模式 (Canvas + GM_xhr)，兼容性最强
+    // 'url': 直链模式
+    // 'proxy': 代理模式
+    image_mode: "base64",
 
     // --- 模型参数 ---
     model: "Qwen/Qwen3-VL-32B-Instruct",
@@ -126,7 +127,7 @@
       if (!isDragging) {
         if (onTap) {
           onTap(e);
-          if(e.cancelable) e.preventDefault();
+          if (e.cancelable) e.preventDefault();
         }
       }
       isDragging = false;
@@ -184,6 +185,8 @@
             .btn-save:hover { background-color: #43a047; }
             .btn-reset { background-color: #f44336; color: white; }
             .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 10px 20px; border-radius: 30px; opacity: 0; transition: opacity 0.3s; z-index: 9999; }
+            a { color: #2196F3; text-decoration: none; }
+            a:hover { text-decoration: underline; }
         `;
     document.head.appendChild(style);
 
@@ -219,7 +222,7 @@
             <div class="section-title">传输模式</div>
             <div class="form-grid">
                 ${mkSelect("图片传输模式", "image_mode", [
-                    {val: "base64", txt: "🎨 Canvas 转 Base64 (强力模式) - 推荐，使用 GM_xhr 绕过 CORS"},
+                    {val: "base64", txt: "🎨 Canvas 转 Base64 (默认/强力) - 推荐，使用 GM_xhr 绕过 CORS"},
                     {val: "url", txt: "🔗 直接传递 URL - 速度快，但会被严格防盗链拦截"},
                     {val: "proxy", txt: "🌐 代理 URL (Proxy) - 使用 moonchan.xyz 中转"}
                 ])}
@@ -229,7 +232,8 @@
             <div class="form-grid">
                 <div class="full-width">${mkInput("API Endpoint", "endpoint")}</div>
                 <div class="full-width">${mkInput("API Key", "api_key", "password")}</div>
-                 <label><a href="https://cloud.siliconflow.cn/i/sRO0U8o0" target="_blank">没有的话点我注册硅基流动(w/aff)</a> </label>
+                <label><a href="https://cloud.siliconflow.cn/i/sRO0U8o0" target="_blank">👉 没有 API Key？点我注册硅基流动 (Aff)</a></label>
+                <label><a href="https://example.com" target="_blank">📚 查看使用教程 (Tutorial)</a></label>
             </div>
 
             <div class="section-title">模型参数</div>
@@ -265,7 +269,7 @@
         `;
 
     document.body.appendChild(container);
-    // ... Save logic ...
+
     const toast = document.createElement("div");
     toast.className = "toast";
     document.body.appendChild(toast);
@@ -370,10 +374,8 @@
                 .vlm-markdown-content pre { background: rgba(0,0,0,0.3); padding: 10px; border-radius: 5px; overflow-x: auto; }
                 .vlm-markdown-content ul, .vlm-markdown-content ol { padding-left: 20px; }
                 .vlm-markdown-content hr { border: 0; border-top: 1px solid rgba(255,255,255,0.2); margin: 10px 0; }
-                
                 .vlm-reasoning { background: rgba(255, 255, 255, 0.05); border-left: 3px solid #FF9800; padding: 8px; margin-bottom: 10px; border-radius: 4px; font-size: 0.9em; color: #aaa; }
                 .vlm-reasoning-title { font-weight: bold; margin-bottom: 5px; color: #FF9800; display: block; font-size: 0.85em; text-transform: uppercase; }
-
                 @media (max-width: 600px) { .vlm-markdown-content { font-size: 13px; } }
             `;
       let styleTag = document.getElementById("vlm-md-style");
@@ -435,7 +437,7 @@
   };
 
   // =========================================================
-  // 模块 3: 图片处理 (Strict Base64 / URL / Proxy)
+  // 模块 3: 图片处理
   // =========================================================
 
   const ImageProcessor = {
@@ -464,7 +466,6 @@
         }
     },
 
-    // 原始版本的强力 Fetch 逻辑，不含 URL Fallback
     convertToBase64_Strict: function (srcUrl) {
       return new Promise((resolve, reject) => {
         GM_xmlhttpRequest({
@@ -613,7 +614,12 @@
     const style = document.createElement("style");
     style.id = "vlm-vanilla-styles";
     style.textContent = css;
-    document.head.appendChild(style);
+    
+    if (document.head) {
+        document.head.appendChild(style);
+    } else {
+        document.documentElement.appendChild(style);
+    }
   }
 
   const Picker = {
@@ -643,4 +649,97 @@
     updateBtnState: function (state, icon) {
       const btn = document.getElementById("vlm-fab");
       if (btn) {
-        btn.className =
+        btn.className = "";
+        if (state === "active") btn.classList.add("active");
+        if (state === "processing") btn.classList.add("processing");
+        btn.textContent = icon;
+      }
+    },
+    handleOver: function (e) {
+      if (e.target.tagName === "IMG")
+        e.target.classList.add("vlm-target-highlight");
+    },
+    handleOut: function (e) {
+      if (e.target.tagName === "IMG")
+        e.target.classList.remove("vlm-target-highlight");
+    },
+    handleClick: function (e) {
+      if (
+        e.target.id === "vlm-fab" ||
+        e.target.closest("#vlm-fab") ||
+        e.target.closest("#vlm-result-box")
+      )
+        return;
+      
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (e.target.tagName === "IMG") {
+        if (Picker.isProcessing) return;
+
+        const storedConfig = GM_getValue("vlm_full_config", {});
+        const config = { ...DEFAULT_CONFIG, ...storedConfig };
+
+        const src = e.target.src;
+        Picker.isProcessing = true;
+        Picker.updateBtnState("processing", "⏳");
+
+        const fab = document.getElementById("vlm-fab");
+        const fabRect = fab.getBoundingClientRect();
+        DisplayBox.show(fabRect, config);
+
+        // 根据配置选择模式
+        ImageProcessor.getPayload(src, config.image_mode)
+          .then((payload) => {
+            sendStreamRequest(config, payload);
+          })
+          .catch((err) => {
+            DisplayBox.updateContent(`**Error Processing Image:** ${err.message}`);
+            Picker.isProcessing = false;
+            Picker.updateBtnState("idle", "👁️");
+          });
+
+        e.target.classList.remove("vlm-target-highlight");
+        Picker.disable();
+      } else {
+        Picker.disable();
+      }
+    },
+  };
+
+  function createFloatingButton() {
+    const fab = document.createElement("div");
+    fab.id = "vlm-fab";
+    fab.textContent = "👁️";
+    fab.title = "点击开始取景 (支持拖拽)";
+    fab.style.left = window.innerWidth - 70 + "px";
+    fab.style.top = window.innerHeight - 150 + "px";
+    document.body.appendChild(fab);
+
+    enableDrag(fab, fab, (e) => {
+        if (!Picker.isProcessing)
+          Picker.isActive ? Picker.disable() : Picker.enable();
+    });
+  }
+
+  function init() {
+    // 注册菜单命令，方便随时打开设置
+    GM_registerMenuCommand("⚙️ 打开 VLM 设置", () => {
+        GM_openInTab(`https://${CONFIG_DOMAIN}/`, { active: true });
+    });
+
+    if (location.hostname === CONFIG_DOMAIN) {
+      renderConfigPage();
+      return;
+    }
+
+    injectStyles();
+    if (document.body) {
+      createFloatingButton();
+    } else {
+      window.addEventListener("DOMContentLoaded", createFloatingButton);
+    }
+  }
+
+  init();
+})();
