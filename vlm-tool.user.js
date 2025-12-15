@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Universal VLM Picker
 // @namespace    http://tampermonkey.net/
-// @version      5.1
+// @version      5.2
 // @description  VLM 截图翻译插件：强力 Base64 模式、支持直链/代理模式、移动端适配、思考过程显示
 // @author       Nanaka & Gemini 3 Pro
 // @homepage     https://config.810114.xyz/
@@ -472,6 +472,9 @@
           method: "GET",
           url: srcUrl,
           responseType: "blob",
+          headers: {
+             "Referer": window.location.href // 关键：带上 Referer 绕过防盗链
+          },
           onload: function (response) {
             if (response.status === 200) {
               const blob = response.response;
