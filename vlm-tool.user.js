@@ -1,11 +1,12 @@
 // ==UserScript==
-// @name         Universal VLM Picker (Proxy URL Support)
+// @name         Universal VLM Picker (Strict Base64)
 // @namespace    http://tampermonkey.net/
-// @version      4.8
-// @description  VLM 截图翻译插件：支持 Base64/直链/代理模式、醒目配置保存提醒、移动端适配、思考过程显示
-// @author       Nanaka & Gemini 3.0 Pro
+// @version      4.9
+// @description  VLM 截图翻译插件：强力 Base64 模式 (GM_xhr)、支持直链/代理模式、移动端适配、思考过程显示
+// @author       Nanaka
 // @homepage     https://config.810114.xyz/
 // @match        *://*/*
+// @connect      *
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_registerMenuCommand
@@ -29,7 +30,7 @@
     api_key: "",
 
     // --- 图片传输模式 ---
-    // 'base64': 使用 Canvas 绘图转 Base64 (默认，兼容性好)
+    // 'base64': 使用 GM_xmlhttpRequest 下载并转 Base64 (最强力，解决CORS)
     // 'url': 直接发送图片链接 (速度快，但可能被防盗链拦截)
     // 'proxy': 使用 proxy.moonchan.xyz 中转 (解决防盗链)
     image_mode: "base64", 
@@ -149,8 +150,6 @@
     style.textContent = `
             .config-container { max-width: 700px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.08); }
             h2 { margin-top: 0; color: #333; border-bottom: 2px solid #f0f0f0; padding-bottom: 15px; }
-            
-            /* 醒目提醒框 */
             .alert-box {
                 background-color: #ffebee;
                 border: 1px solid #ffcdd2;
@@ -169,7 +168,6 @@
                 70% { box-shadow: 0 0 0 10px rgba(255, 82, 82, 0); }
                 100% { box-shadow: 0 0 0 0 rgba(255, 82, 82, 0); }
             }
-
             .section-title { font-size: 14px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin: 25px 0 10px 0; font-weight: bold; border-left: 4px solid #2196F3; padding-left: 10px; }
             .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
             .full-width { grid-column: span 2; }
@@ -180,13 +178,11 @@
             }
             input:focus, textarea:focus, select:focus { border-color: #2196F3; outline: none; }
             textarea { resize: vertical; min-height: 80px; font-family: monospace; }
-            
             .btn-container { margin-top: 30px; display: flex; justify-content: space-between; align-items: center; border-top: 2px solid #f0f0f0; padding-top: 20px; position: sticky; bottom: 0; background: white; z-index: 10; }
             .btn { padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; }
             .btn-save { background-color: #4CAF50; color: white; flex-grow: 1; margin-left: 10px; }
             .btn-save:hover { background-color: #43a047; }
             .btn-reset { background-color: #f44336; color: white; }
-            
             .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 10px 20px; border-radius: 30px; opacity: 0; transition: opacity 0.3s; z-index: 9999; }
         `;
     document.head.appendChild(style);
@@ -223,9 +219,9 @@
             <div class="section-title">传输模式</div>
             <div class="form-grid">
                 ${mkSelect("图片传输模式", "image_mode", [
-                    {val: "base64", txt: "🎨 Canvas 绘图 (Base64) - 默认，兼容性好，绕过简单防盗链"},
-                    {val: "url", txt: "🔗 直接传递 URL - 速度快，省Token，但会被严格防盗链拦截"},
-                    {val: "proxy", txt: "🌐 代理 URL (Proxy) - 使用 moonchan.xyz 中转，解决防盗链"}
+                    {val: "base64", txt: "🎨 Canvas 转 Base64 (强力模式) - 推荐，使用 GM_xhr 绕过 CORS"},
+                    {val: "url", txt: "🔗 直接传递 URL - 速度快，但会被严格防盗链拦截"},
+                    {val: "proxy", txt: "🌐 代理 URL (Proxy) - 使用 moonchan.xyz 中转"}
                 ])}
             </div>
 
@@ -269,7 +265,7 @@
         `;
 
     document.body.appendChild(container);
-
+    // ... Save logic ...
     const toast = document.createElement("div");
     toast.className = "toast";
     document.body.appendChild(toast);
@@ -439,11 +435,10 @@
   };
 
   // =========================================================
-  // 模块 3: 图片处理 (根据配置模式)
+  // 模块 3: 图片处理 (Strict Base64 / URL / Proxy)
   // =========================================================
 
   const ImageProcessor = {
-    // 统一处理入口
     getPayload: function(imgUrl, mode) {
         console.log(`[VLM] Processing image in mode: ${mode}`);
         if (mode === 'url') {
@@ -451,18 +446,16 @@
         } else if (mode === 'proxy') {
             return Promise.resolve(this.generateProxyUrl(imgUrl));
         } else {
-            return this.convertToBase64(imgUrl);
+            // base64 mode - use Strong Fetch (GM_xmlhttpRequest)
+            return this.convertToBase64_Strict(imgUrl);
         }
     },
 
-    // 构造代理 URL
     generateProxyUrl: function(src) {
         try {
             const urlObj = new URL(src);
             const originalHost = urlObj.host;
-            // 替换 Host
             urlObj.host = "proxy.moonchan.xyz";
-            // 添加 proxy_host 参数
             urlObj.searchParams.append("proxy_host", originalHost);
             return urlObj.toString();
         } catch (e) {
@@ -471,39 +464,39 @@
         }
     },
 
-    convertToBase64: function (imgUrl) {
-      return new Promise((resolve) => {
-        const img = new Image();
-        img.crossOrigin = "Anonymous";
-        
-        const timer = setTimeout(() => {
-            console.warn("[VLM] Canvas timeout, fallback to URL.");
-            resolve(imgUrl); 
-        }, 3000);
-
-        img.onload = function () {
-          clearTimeout(timer);
-          try {
-            const canvas = document.createElement("canvas");
-            canvas.width = img.naturalWidth;
-            canvas.height = img.naturalHeight;
-            const ctx = canvas.getContext("2d");
-            ctx.drawImage(img, 0, 0);
-            const base64 = canvas.toDataURL("image/webp", 0.8);
-            resolve(base64);
-          } catch (e) {
-            console.warn("[VLM] CORS restriction (tainted canvas), fallback to URL.", e);
-            resolve(imgUrl);
-          }
-        };
-
-        img.onerror = function () {
-          clearTimeout(timer);
-          console.warn("[VLM] Image load error, fallback to URL.");
-          resolve(imgUrl);
-        };
-
-        img.src = imgUrl;
+    // 原始版本的强力 Fetch 逻辑，不含 URL Fallback
+    convertToBase64_Strict: function (srcUrl) {
+      return new Promise((resolve, reject) => {
+        GM_xmlhttpRequest({
+          method: "GET",
+          url: srcUrl,
+          responseType: "blob",
+          onload: function (response) {
+            if (response.status === 200) {
+              const blob = response.response;
+              const img = new Image();
+              img.onload = function () {
+                const canvas = document.createElement("canvas");
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(img, 0, 0);
+                try {
+                  const base64 = canvas.toDataURL("image/webp", 0.8);
+                  URL.revokeObjectURL(img.src);
+                  resolve(base64);
+                } catch (e) {
+                  reject(e);
+                }
+              };
+              img.onerror = () => reject(new Error("Image load failed inside Canvas conversion"));
+              img.src = URL.createObjectURL(blob);
+            } else {
+              reject(new Error("GM_xmlhttpRequest Download failed: " + response.status));
+            }
+          },
+          onerror: (err) => reject(new Error("GM_xmlhttpRequest Network Error")),
+        });
       });
     },
   };
@@ -650,92 +643,4 @@
     updateBtnState: function (state, icon) {
       const btn = document.getElementById("vlm-fab");
       if (btn) {
-        btn.className = "";
-        if (state === "active") btn.classList.add("active");
-        if (state === "processing") btn.classList.add("processing");
-        btn.textContent = icon;
-      }
-    },
-    handleOver: function (e) {
-      if (e.target.tagName === "IMG")
-        e.target.classList.add("vlm-target-highlight");
-    },
-    handleOut: function (e) {
-      if (e.target.tagName === "IMG")
-        e.target.classList.remove("vlm-target-highlight");
-    },
-    handleClick: function (e) {
-      if (
-        e.target.id === "vlm-fab" ||
-        e.target.closest("#vlm-fab") ||
-        e.target.closest("#vlm-result-box")
-      )
-        return;
-      
-      e.preventDefault();
-      e.stopPropagation();
-
-      if (e.target.tagName === "IMG") {
-        if (Picker.isProcessing) return;
-
-        const storedConfig = GM_getValue("vlm_full_config", {});
-        const config = { ...DEFAULT_CONFIG, ...storedConfig };
-
-        const src = e.target.src;
-        Picker.isProcessing = true;
-        Picker.updateBtnState("processing", "⏳");
-
-        const fab = document.getElementById("vlm-fab");
-        const fabRect = fab.getBoundingClientRect();
-        DisplayBox.show(fabRect, config);
-
-        // 根据配置选择模式
-        ImageProcessor.getPayload(src, config.image_mode)
-          .then((payload) => {
-            sendStreamRequest(config, payload);
-          })
-          .catch((err) => {
-            DisplayBox.updateContent(`**Error Processing Image:** ${err.message}`);
-            Picker.isProcessing = false;
-            Picker.updateBtnState("idle", "👁️");
-          });
-
-        e.target.classList.remove("vlm-target-highlight");
-        Picker.disable();
-      } else {
-        Picker.disable();
-      }
-    },
-  };
-
-  function createFloatingButton() {
-    const fab = document.createElement("div");
-    fab.id = "vlm-fab";
-    fab.textContent = "👁️";
-    fab.title = "点击开始取景 (支持拖拽)";
-    fab.style.left = window.innerWidth - 70 + "px";
-    fab.style.top = window.innerHeight - 150 + "px";
-    document.body.appendChild(fab);
-
-    enableDrag(fab, fab, (e) => {
-        if (!Picker.isProcessing)
-          Picker.isActive ? Picker.disable() : Picker.enable();
-    });
-  }
-
-  function init() {
-    if (location.hostname === CONFIG_DOMAIN) {
-      renderConfigPage();
-      return;
-    }
-
-    injectStyles();
-    if (document.body) {
-      createFloatingButton();
-    } else {
-      window.addEventListener("DOMContentLoaded", createFloatingButton);
-    }
-  }
-
-  init();
-})();
+        btn.className =
