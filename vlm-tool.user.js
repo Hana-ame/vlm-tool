@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Universal VLM Picker (Stream & Markdown)
+// @name         Universal VLM Picker (Mobile Supported)
 // @namespace    http://tampermonkey.net/
-// @version      4.3
-// @description  VLM 截图翻译插件：支持流式输出、Markdown 渲染、自定义结果框样式
+// @version      4.4
+// @description  VLM 截图翻译插件：支持流式输出、Markdown 渲染、自定义结果框样式 (适配移动端触摸拖拽)
 // @author       Nanaka
 // @homepage     https://config.810114.xyz/
 // @match        *://*/*
@@ -22,7 +22,7 @@
   const CONFIG_DOMAIN = "config.810114.xyz";
 
   // =========================================================
-  // 0. 默认配置 (含新增的样式配置)
+  // 0. 默认配置
   // =========================================================
   const DEFAULT_CONFIG = {
     // --- 连接设置 ---
@@ -39,9 +39,8 @@
     top_k: 40,
     min_p: 0,
     frequency_penalty: 1,
-    // stream: true, // 强制为 true，不再从配置读取，但保留在逻辑中
 
-    // --- 结果显示框样式 (新增) ---
+    // --- 结果显示框样式 ---
     box_width: 400, // px
     box_height: 500, // px
     box_font_size: 14, // px
@@ -51,9 +50,94 @@
   };
 
   // =========================================================
-  // 模块 1: 设置页面 (Config Page)
+  // 辅助函数：通用拖拽 (支持鼠标 & 触摸)
+  // =========================================================
+  function enableDrag(element, handleElement, onTap) {
+    let startX, startY, initialLeft, initialTop;
+    let isDragging = false;
+    // 记录是否正在交互，防止多点触控冲突
+    let isInteracting = false;
+
+    // 获取坐标 (兼容 Mouse 和 Touch)
+    const getCoords = (e) => {
+      if (e.touches && e.touches.length > 0) {
+        return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      }
+      return { x: e.clientX, y: e.clientY };
+    };
+
+    const onStart = (e) => {
+      // 如果是鼠标右键，忽略
+      if (e.type === "mousedown" && e.button !== 0) return;
+      
+      // 如果是触摸且不是单指，忽略（比如缩放操作）
+      if (e.type === "touchstart" && e.touches.length > 1) return;
+
+      const coords = getCoords(e);
+      startX = coords.x;
+      startY = coords.y;
+      initialLeft = element.offsetLeft;
+      initialTop = element.offsetTop;
+      isDragging = false;
+      isInteracting = true;
+      
+      // 触摸事件需要在 move 中 preventDefault，这里先不处理
+    };
+
+    const onMove = (e) => {
+      if (!isInteracting) return;
+
+      const coords = getCoords(e);
+      const dx = coords.x - startX;
+      const dy = coords.y - startY;
+
+      // 设置阈值，移动超过 5px 视为拖拽，否则视为点击
+      if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+        isDragging = true;
+      }
+
+      if (isDragging) {
+        // 阻止默认滚动行为 (主要针对移动端)
+        if (e.cancelable) e.preventDefault();
+        
+        element.style.left = initialLeft + dx + "px";
+        element.style.top = initialTop + dy + "px";
+        
+        // 简单的边界检查 (防止拖出屏幕)
+        // element.style.right = 'auto'; // 清除可能的 right 定位
+        // element.style.bottom = 'auto';
+      }
+    };
+
+    const onEnd = (e) => {
+      if (!isInteracting) return;
+      isInteracting = false;
+
+      // 如果不是拖拽操作，且有点击回调，则执行
+      if (!isDragging && onTap) {
+        onTap(e);
+      }
+      // 重置状态
+      isDragging = false;
+    };
+
+    // 绑定事件到 handleElement (拖拽手柄)
+    handleElement.addEventListener("mousedown", onStart);
+    handleElement.addEventListener("touchstart", onStart, { passive: false });
+
+    // 绑定 move 和 end 到 window/document 以防止脱手
+    window.addEventListener("mousemove", onMove, { passive: false });
+    window.addEventListener("touchmove", onMove, { passive: false });
+    
+    window.addEventListener("mouseup", onEnd);
+    window.addEventListener("touchend", onEnd);
+  }
+
+  // =========================================================
+  // 模块 1: 设置页面
   // =========================================================
   function renderConfigPage() {
+    // ... (保持原有代码不变)
     document.documentElement.innerHTML =
       "<head><title>VLM 高级设置</title></head><body></body>";
     document.body.style.backgroundColor = "#f5f7fa";
@@ -105,27 +189,17 @@
 
     container.innerHTML = `
             <h2>🧩 VLM 插件设置</h2>
-
             <div class="section-title">连接设置</div>
             <div class="form-grid">
-                <div class="full-width">${mkInput(
-                  "API Endpoint",
-                  "endpoint"
-                )}</div>
-                <div class="full-width">${mkInput(
-                  "API Key",
-                  "api_key",
-                  "password"
-                )}</div>
+                <div class="full-width">${mkInput("API Endpoint", "endpoint")}</div>
+                <div class="full-width">${mkInput("API Key", "api_key", "password")}</div>
                  <label><a href="https://cloud.siliconflow.cn/i/sRO0U8o0">没有的话点我注册硅基流动(w/aff)</a> </label>
             </div>
-
             <div class="section-title">模型参数</div>
             <div class="form-grid">
                 <div class="full-width">${mkInput("Model Name", "model")}</div>
                 ${mkInput("System Prompt", "system_prompt", "textarea")}
             </div>
-
             <div class="section-title">生成参数</div>
             <div class="form-grid">
                 ${mkInput("Max Tokens", "max_tokens", "number")}
@@ -133,15 +207,8 @@
                 ${mkInput("Top P", "top_p", "number", "0.01")}
                 ${mkInput("Top K", "top_k", "number")}
                 ${mkInput("Min P", "min_p", "number", "0.01")}
-                ${mkInput(
-                  "Frequency Penalty",
-                  "frequency_penalty",
-                  "number",
-                  "0.1"
-                )}
-                <div class="full-width" style="color: #666; font-size: 12px; padding: 5px 0;">* Stream 模式已强制启用，无需设置。</div>
+                ${mkInput("Frequency Penalty", "frequency_penalty", "number", "0.1")}
             </div>
-
             <div class="section-title">结果显示框样式</div>
             <div class="form-grid">
                 ${mkInput("宽度 (px)", "box_width", "number")}
@@ -151,7 +218,6 @@
                 ${mkInput("文字颜色", "box_text_color", "color")}
                 ${mkInput("不透明度 (0-1)", "box_opacity", "number", "0.1")}
             </div>
-
             <div class="btn-container">
                 <button id="btn-reset" class="btn btn-reset">重置默认</button>
                 <button id="btn-save" class="btn btn-save">保存配置</button>
@@ -159,8 +225,8 @@
         `;
 
     document.body.appendChild(container);
-
-    const toast = document.createElement("div");
+    // ... Save/Reset logic (省略以节省篇幅，原逻辑保持不变) ...
+     const toast = document.createElement("div");
     toast.className = "toast";
     document.body.appendChild(toast);
     const showMsg = (msg) => {
@@ -190,7 +256,7 @@
   }
 
   // =========================================================
-  // 模块 2: 结果显示框 (Display Box) - 支持 Markdown
+  // 模块 2: 结果显示框 (适配移动端)
   // =========================================================
   const DisplayBox = {
     element: null,
@@ -198,77 +264,59 @@
 
     init: function () {
       if (this.element) return;
-      // 创建容器
       this.element = document.createElement("div");
       this.element.id = "vlm-result-box";
 
-      // 创建标题栏/关闭按钮
       const header = document.createElement("div");
+      // 增加 touch-action: none 确保拖拽不触发浏览器默认行为
       header.style.cssText =
-        "display: flex; justify-content: space-between; align-items: left; padding: 5px 10px; background: rgba(255,255,255,0.1); border-bottom: 1px solid rgba(255,255,255,0.1); cursor: move;";
+        "display: flex; justify-content: space-between; align-items: left; padding: 10px; background: rgba(255,255,255,0.1); border-bottom: 1px solid rgba(255,255,255,0.1); cursor: move; touch-action: none;";
       header.innerHTML =
         '<span style="font-size:12px; font-weight:bold;">🤖 VLM Response</span>';
 
       const closeBtn = document.createElement("span");
       closeBtn.textContent = "✖";
-      closeBtn.style.cssText = "cursor: pointer; font-size: 14px;";
-      closeBtn.onclick = () => this.hide();
+      closeBtn.style.cssText = "cursor: pointer; font-size: 16px; padding: 0 5px;"; // 增大触控面积
+      closeBtn.onclick = (e) => { e.stopPropagation(); this.hide(); }; // 防止触发拖拽
+      closeBtn.ontouchend = (e) => { e.stopPropagation(); this.hide(); }; // 移动端兼容
       header.appendChild(closeBtn);
 
       this.element.appendChild(header);
 
-      // 创建内容区域
       this.contentElement = document.createElement("div");
       this.contentElement.className = "vlm-markdown-content";
       this.contentElement.style.cssText =
-        "padding: 10px; overflow-y: auto; height: calc(100% - 30px);";
+        "padding: 10px; overflow-y: auto; height: calc(100% - 40px); -webkit-overflow-scrolling: touch;"; // iOS 滚动优化
       this.element.appendChild(this.contentElement);
 
       document.body.appendChild(this.element);
 
-      // 拖拽逻辑 (简单实现)
-      let isDragging = false,
-        startX,
-        startY,
-        startLeft,
-        startTop;
-      header.onmousedown = (e) => {
-        isDragging = true;
-        startX = e.clientX;
-        startY = e.clientY;
-        startLeft = this.element.offsetLeft;
-        startTop = this.element.offsetTop;
-        e.preventDefault();
-      };
-      document.onmousemove = (e) => {
-        if (isDragging) {
-          this.element.style.left = startLeft + e.clientX - startX + "px";
-          this.element.style.top = startTop + e.clientY - startY + "px";
-        }
-      };
-      document.onmouseup = () => (isDragging = false);
+      // 使用通用拖拽函数
+      enableDrag(this.element, header, null);
     },
 
     applyConfig: function (config) {
       if (!this.element) this.init();
 
-      // 应用 Config 中的样式
       this.element.style.position = "fixed";
       this.element.style.zIndex = "2147483647";
+      // 适配移动端：设置最大宽高，防止溢出屏幕
       this.element.style.width = config.box_width + "px";
+      this.element.style.maxWidth = "95vw"; // 限制最大宽度
       this.element.style.height = config.box_height + "px";
+      this.element.style.maxHeight = "90vh"; // 限制最大高度
+      
       this.element.style.backgroundColor = config.box_bg_color;
       this.element.style.color = config.box_text_color;
       this.element.style.fontSize = config.box_font_size + "px";
       this.element.style.opacity = config.box_opacity;
       this.element.style.borderRadius = "8px";
       this.element.style.boxShadow = "0 4px 15px rgba(0,0,0,0.3)";
-      this.element.style.display = "none"; // 默认隐藏
+      this.element.style.display = "none";
       this.element.style.backdropFilter = "blur(5px)";
-      // 修正
-      this.element.style.textAlign = "left";  // 添加这一行
+      this.element.style.textAlign = "left";
 
-      // 设置 Markdown 样式
+      // Markdown 样式 (不变)
       const css = `
                 .vlm-markdown-content p { margin: 0 0 10px 0; line-height: 1.5; }
                 .vlm-markdown-content strong { color: #4fc3f7; }
@@ -276,6 +324,10 @@
                 .vlm-markdown-content pre { background: rgba(0,0,0,0.3); padding: 10px; border-radius: 5px; overflow-x: auto; }
                 .vlm-markdown-content ul, .vlm-markdown-content ol { padding-left: 20px; }
                 .vlm-markdown-content hr { border: 0; border-top: 1px solid rgba(255,255,255,0.2); margin: 10px 0; }
+                /* 移动端字体调整 */
+                @media (max-width: 600px) {
+                    .vlm-markdown-content { font-size: 13px; }
+                }
             `;
       let styleTag = document.getElementById("vlm-md-style");
       if (!styleTag) {
@@ -289,17 +341,27 @@
     show: function (fabRect, config) {
       this.applyConfig(config);
 
-      // 计算位置：悬浮球上方左侧
-      // 假设悬浮球在右下角，我们把框放在球的左上方向
-      // Left = 球的Left - 框宽 - 间距
-      // Top = 球的Top - 框高 - 间距
-      const gap = 20;
-      let left = fabRect.left - config.box_width - gap;
-      let top = fabRect.top - config.box_height + fabRect.height; // 底部对齐一点
+      // 智能定位：优先放在悬浮球的左上方，但防止溢出屏幕
+      const boxW = Math.min(config.box_width, window.innerWidth * 0.95);
+      const boxH = Math.min(config.box_height, window.innerHeight * 0.9);
+      
+      // 默认尝试位置
+      let left = fabRect.left - boxW - 20;
+      let top = fabRect.top - boxH + fabRect.height;
 
-      // 简单边界检查
-      if (left < 10) left = 10;
+      // 边界检查与修正
+      // 1. 如果左边放不下，尝试放右边
+      if (left < 10) {
+          left = fabRect.right + 20;
+          // 如果右边也放不下（比如球在中间），则居中
+          if (left + boxW > window.innerWidth) {
+              left = (window.innerWidth - boxW) / 2;
+          }
+      }
+      
+      // 2. 上下边界检查
       if (top < 10) top = 10;
+      if (top + boxH > window.innerHeight) top = window.innerHeight - boxH - 10;
 
       this.element.style.left = left + "px";
       this.element.style.top = top + "px";
@@ -310,12 +372,10 @@
     },
 
     updateContent: function (markdownText) {
-      if (!this.contentElement) return;
-      // 使用 marked 解析 Markdown
-      const html = marked.parse(markdownText);
-      this.contentElement.innerHTML = html;
-      // 自动滚动到底部
-      this.contentElement.scrollTop = this.contentElement.scrollHeight;
+        if (!this.contentElement) return;
+        const html = marked.parse(markdownText);
+        this.contentElement.innerHTML = html;
+        this.contentElement.scrollTop = this.contentElement.scrollHeight;
     },
 
     hide: function () {
@@ -324,14 +384,14 @@
   };
 
   // =========================================================
-  // 模块 3: 核心逻辑 (Picker, Image, Network)
+  // 模块 3: 核心逻辑
   // =========================================================
 
   function injectStyles() {
     if (document.getElementById("vlm-vanilla-styles")) return;
     const css = `
-            #vlm-fab { position: fixed; width: 50px; height: 50px; background: #333; color: white; border-radius: 50%; z-index: 2147483646; display: flex; align-items: left; justify-content: center; cursor: pointer; font-size: 24px; border: 2px solid rgba(255,255,255,0.2); transition: transform 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-            #vlm-fab:hover { transform: scale(1.05); }
+            #vlm-fab { position: fixed; width: 50px; height: 50px; background: #333; color: white; border-radius: 50%; z-index: 2147483646; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 24px; border: 2px solid rgba(255,255,255,0.2); transition: transform 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.3); touch-action: none; user-select: none; }
+            #vlm-fab:active { transform: scale(0.95); }
             #vlm-fab.active { background-color: #F44336; border-color: white; }
             #vlm-fab.processing { background-color: #FF9800; cursor: wait; }
             .vlm-picking-mode { cursor: crosshair !important; }
@@ -345,7 +405,7 @@
 
   const ImageProcessor = {
     convertToWebP: function (srcUrl) {
-      return new Promise((resolve, reject) => {
+       return new Promise((resolve, reject) => {
         GM_xmlhttpRequest({
           method: "GET",
           url: srcUrl,
@@ -380,9 +440,7 @@
     },
   };
 
-  // --- SSE 请求处理 (Native Fetch Version) ---
   async function sendStreamRequest(config, base64Image) {
-    // 1. 构造 Payload
     const payload = {
       model: config.model,
       max_tokens: config.max_tokens,
@@ -401,11 +459,10 @@
       ],
     };
 
-    let currentContent = ""; // 用于累积 Markdown 文本
-    let buffer = ""; // 用于缓存未传输完整的行
+    let currentContent = "";
+    let buffer = "";
 
     try {
-      // 2. 发起 Fetch 请求
       const response = await fetch(config.endpoint, {
         method: "POST",
         headers: {
@@ -420,74 +477,46 @@
         throw new Error(`HTTP ${response.status}: ${errText}`);
       }
 
-      // 3. 建立流式读取器
       const reader = response.body.getReader();
       const decoder = new TextDecoder("utf-8");
 
-      // 4. 循环读取流
       while (true) {
         const { done, value } = await reader.read();
+        if (done) break;
 
-        if (done) break; // 读取完毕
-
-        // 解码当前数据块 (Uint8Array -> String)
-        // { stream: true } 选项保持解码器的内部状态，防止多字节字符被切断
         const chunk = decoder.decode(value, { stream: true });
-
-        // 拼接到缓存中
         buffer += chunk;
-
-        // 按行分割 (SSE 协议以换行符分隔)
         const lines = buffer.split("\n");
-
-        // 保存最后一行（因为它可能不完整，属于下一个数据包的一部分）
         buffer = lines.pop();
 
-        // 处理完整的行
         for (const line of lines) {
           const trimmed = line.trim();
           if (!trimmed) continue;
-
-          // 识别 data: 开头的行
           if (trimmed.startsWith("data: ")) {
-            const jsonStr = trimmed.slice(6); // 去掉 "data: "
-
-            if (jsonStr === "[DONE]") continue; // 结束标志
-
+            const jsonStr = trimmed.slice(6);
+            if (jsonStr === "[DONE]") continue;
             try {
               const json = JSON.parse(jsonStr);
-
-              // 健壮性检查：确保 choices 存在且有内容
-              if (
-                json.choices &&
-                Array.isArray(json.choices) &&
-                json.choices.length > 0
-              ) {
+              if (json.choices && json.choices.length > 0) {
                 const delta = json.choices[0].delta;
-                // 检查 content 是否存在（有时 delta 是空的或者是 role 字段）
                 if (delta && delta.content) {
                   currentContent += delta.content;
-                  // 实时渲染 Markdown
                   DisplayBox.updateContent(currentContent);
                 }
               }
-            } catch (e) {
-              console.warn("JSON Parse Error:", e, "Line:", trimmed);
-            }
+            } catch (e) { console.warn(e); }
           }
         }
       }
-
-      console.log("Stream finished successfully.");
     } catch (err) {
       console.error("Fetch Error:", err);
       DisplayBox.updateContent(`**Network Error:** ${err.message}`);
     } finally {
-      // 无论成功还是失败，都重置按钮状态
       Picker.updateBtnState("idle", "👁️");
       Picker.isProcessing = false;
     }
   }
+
   const Picker = {
     isActive: false,
     isProcessing: false,
@@ -495,6 +524,7 @@
       if (this.isActive) return;
       this.isActive = true;
       document.body.classList.add("vlm-picking-mode");
+      // 移动端主要靠 click (或 tap)， PC 靠 hover
       document.addEventListener("mouseover", this.handleOver, true);
       document.addEventListener("mouseout", this.handleOut, true);
       document.addEventListener("click", this.handleClick, true);
@@ -530,19 +560,20 @@
         e.target.classList.remove("vlm-target-highlight");
     },
     handleClick: function (e) {
+      // 忽略 FAB 和 结果框 的点击
       if (
         e.target.id === "vlm-fab" ||
         e.target.closest("#vlm-fab") ||
         e.target.closest("#vlm-result-box")
       )
         return;
+      
       e.preventDefault();
       e.stopPropagation();
 
       if (e.target.tagName === "IMG") {
         if (Picker.isProcessing) return;
 
-        // 读取配置
         const storedConfig = GM_getValue("vlm_full_config", {});
         const config = { ...DEFAULT_CONFIG, ...storedConfig };
 
@@ -550,7 +581,7 @@
         Picker.isProcessing = true;
         Picker.updateBtnState("processing", "⏳");
 
-        // 显示结果框
+        // 定位并显示
         const fab = document.getElementById("vlm-fab");
         const fabRect = fab.getBoundingClientRect();
         DisplayBox.show(fabRect, config);
@@ -568,55 +599,35 @@
           });
 
         e.target.classList.remove("vlm-target-highlight");
-        Picker.disable(); // 选中后退出取景模式
+        Picker.disable();
       } else {
+        // 点击非图片区域取消
         Picker.disable();
       }
     },
   };
 
+  // 重写创建悬浮球逻辑，支持移动端拖拽
   function createFloatingButton() {
     const fab = document.createElement("div");
     fab.id = "vlm-fab";
     fab.textContent = "👁️";
-    fab.title = "点击开始取景";
-    fab.style.left = window.innerWidth - 80 + "px";
-    fab.style.top = window.innerHeight - 100 + "px";
+    fab.title = "点击开始取景 (支持拖拽)";
+    // 初始位置调整
+    fab.style.left = window.innerWidth - 70 + "px";
+    fab.style.top = window.innerHeight - 150 + "px";
     document.body.appendChild(fab);
 
-    let isDragging = false,
-      startX,
-      startY,
-      initialLeft,
-      initialTop;
-
-    fab.addEventListener("mousedown", (e) => {
-      if (e.button !== 0) return;
-      isDragging = true;
-      startX = e.clientX;
-      startY = e.clientY;
-      initialLeft = fab.offsetLeft;
-      initialTop = fab.offsetTop;
-      e.preventDefault();
-    });
-    window.addEventListener("mousemove", (e) => {
-      if (!isDragging) return;
-      fab.style.left = initialLeft + e.clientX - startX + "px";
-      fab.style.top = initialTop + e.clientY - startY + "px";
-    });
-    window.addEventListener("mouseup", (e) => {
-      if (!isDragging) return;
-      isDragging = false;
-      // 区分点击和拖拽
-      if (Math.hypot(e.clientX - startX, e.clientY - startY) < 5) {
+    // 使用封装好的通用拖拽函数
+    enableDrag(fab, fab, (e) => {
+        // 点击回调 (Tap)
         if (!Picker.isProcessing)
           Picker.isActive ? Picker.disable() : Picker.enable();
-      }
     });
   }
 
   // =========================================================
-  // 主入口 (Main)
+  // 主入口
   // =========================================================
   function init() {
     if (location.hostname === CONFIG_DOMAIN) {
