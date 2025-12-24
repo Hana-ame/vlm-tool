@@ -1,0 +1,11 @@
+# 允许所有文件被跨域访问
+/*
+  Access-Control-Allow-Origin: *
+  Access-Control-Allow-Methods: GET, HEAD, OPTIONS
+  Access-Control-Max-Age: 86400
+  
+# 针对 .user.js 和 .js 强制正确的 MIME 类型 (可选，防止浏览器乱猜)
+/*.js
+  Content-Type: application/javascript; charset=utf-8
+/*.user.js
+  Content-Type: application/javascript; charset=utf-8

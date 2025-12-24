@@ -16715,7 +16715,8 @@ function isValidHost(hostname) {
   if (!hostname) return false;
   return isEh(hostname) || isEx(hostname) || isHathNetwork(hostname) || isRepo(hostname) || isWiki(hostname);
 }
-const EX = 'exhentai.org';
+// const EX = 'exhentai.org';
+const EX = window.location.host;
 const EH = 'e-hentai.org';
 const EXU = 'exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion';
 const EHGT = 'ehgt.org';
@@ -22752,9 +22753,9 @@ function setBadge(info) {
 let TagContextMenu = class TagContextMenu {
   constructor(tagging) {
     this.tagging = tagging;
-    this.documentUrlPatterns = ['*://exhentai.org/*', '*://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion/*', '*://e-hentai.org/*', '*://*.exhentai.org/*', '*://*.exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion/*', '*://*.e-hentai.org/*'];
+    this.documentUrlPatterns = ['*://exhentai.org/*', '*://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion/*', '*://e-hentai.org/*', '*://*.exhentai.org/*', '*://*.exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion/*', '*://*.e-hentai.org/*', `*://${window.location.host}/*`];
     this.title = '提交标签翻译';
-    this.targetUrlPatterns = ['*://exhentai.org/tag/*', '*://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion/tag/*', '*://e-hentai.org/tag/*', '*://*.exhentai.org/tag/*', '*://*.exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion/tag/*', '*://*.e-hentai.org/tag/*'];
+    this.targetUrlPatterns = ['*://exhentai.org/tag/*', '*://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion/tag/*', '*://e-hentai.org/tag/*', '*://*.exhentai.org/tag/*', '*://*.exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion/tag/*', '*://*.e-hentai.org/tag/*', `*://${window.location.host}/tag/*`];
     this.contexts = ['link'];
     this.onclick = info => {
       var _info$url, _info$url$split$pop$r, _info$url$split$pop, _seg$pop;
