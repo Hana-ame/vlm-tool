@@ -217,4 +217,6 @@
 
     info: window.GM_info,
   };
+
+  window.unsafeWindow = window
 })();
