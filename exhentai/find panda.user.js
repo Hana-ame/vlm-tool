@@ -20,8 +20,7 @@
 // @updateURL https://update.sleazyfork.org/scripts/455847/find%20panda.meta.js
 // ==/UserScript==
 
-GM_addStyle(GM_getResourceText("iziToast.min.css"))
-
+// GM_addStyle(GM_getResourceText("iziToast.min.css"))
 
 "use strict";
 (() => {
@@ -31,7 +30,7 @@ GM_addStyle(GM_getResourceText("iziToast.min.css"))
       GM_xmlhttpRequest({
         url,
         onload: (resp) => res(resp.responseText),
-        onerror: (resp) => rej(resp.error)
+        onerror: (resp) => rej(resp.error),
       });
     });
   };
@@ -126,7 +125,7 @@ GM_addStyle(GM_getResourceText("iziToast.min.css"))
       },
       onClosed: (_, el) => {
         el.removeEventListener("click", openPanda);
-      }
+      },
     });
   };
   var filteKws = (kws) => {
