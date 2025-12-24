@@ -243,4 +243,70 @@
   };
 
   window.unsafeWindow = window;
+
+  // 1. 配置常量
+  const STORAGE_KEY = "custom_loader_scripts";
+  const CURRENT_VERSION = "1.0.1"; // 👈 每次修改列表后，增加这个版本号
+
+  // 2. 脚本列表数据
+  const FIXED_SCRIPTS = [
+    {
+      name: "聊天室",
+      describe: "页面右下角的蓝色社交气泡",
+      url: "https://inline-chat.moonchan.xyz/loader.js",
+      defaultEnabled: true,
+    },
+    {
+      name: "EhSyringe (汉化)",
+      describe: "E站注射器：将全站 UI 及 37000+ 标签翻译为中文。",
+      url: "https://config.810114.xyz/exhentai/EhSyringe.user.js",
+      defaultEnabled: false,
+    },
+  ];
+
+  /**
+   * 初始化/更新存储控制器
+   */
+  function initStorage() {
+    const rawData = localStorage.getItem(STORAGE_KEY);
+    let needUpdate = false;
+
+    if (!rawData) {
+      // 场景 A: 首次运行，完全没有数据
+      console.log("📦 首次运行，初始化数据...");
+      needUpdate = true;
+    } else {
+      try {
+        const parsedData = JSON.parse(rawData);
+        // 场景 B: 检查版本号。如果本地版本与当前脚本版本不一致，则覆盖
+        if (parsedData.version !== CURRENT_VERSION) {
+          console.log(
+            `🆙 版本更新: ${
+              parsedData.version || "unknown"
+            } -> ${CURRENT_VERSION}`
+          );
+          needUpdate = true;
+        }
+      } catch (e) {
+        // 场景 C: 数据损坏，强制重置
+        console.error("⚠️ 存储数据格式损坏，正在重置...");
+        needUpdate = true;
+      }
+    }
+
+    if (needUpdate) {
+      const payload = {
+        version: CURRENT_VERSION,
+        scripts: FIXED_SCRIPTS,
+        updatedAt: new Date().toISOString(),
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      console.log("✅ 数据同步成功");
+    } else {
+      console.log("ℹ️ 数据已是最新版本，无需操作");
+    }
+  }
+
+  // 执行
+  initStorage();
 })();
