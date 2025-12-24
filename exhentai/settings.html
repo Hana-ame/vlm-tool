@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -20,7 +21,7 @@
             width: 100%;
             max-width: 400px;
             border-radius: 16px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
             overflow: hidden;
             padding-bottom: 20px;
         }
@@ -49,7 +50,7 @@
             background: transparent;
             transition: 0.2s;
         }
-        
+
         .reset-btn:hover {
             background: #fff1f0;
         }
@@ -96,7 +97,8 @@
             display: inline-block;
             width: 50px;
             height: 28px;
-            flex-shrink: 0; /* 防止开关被挤压 */
+            flex-shrink: 0;
+            /* 防止开关被挤压 */
         }
 
         .switch input {
@@ -127,18 +129,20 @@
             background-color: white;
             transition: .3s;
             border-radius: 50%;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
 
-        input:checked + .slider {
-            background-color: #34C759; /* iOS Green */
+        input:checked+.slider {
+            background-color: #34C759;
+            /* iOS Green */
         }
 
-        input:checked + .slider:before {
+        input:checked+.slider:before {
             transform: translateX(22px);
         }
     </style>
 </head>
+
 <body>
 
     <div class="container">
@@ -154,9 +158,15 @@
     <script>
         // ================= 配置区域 =================
         // 在这里添加你需要控制的开关列表
-        const configList = [
-            { key: 'chat', name: '右下角聊天气泡' },
-            { key: 'ehsyringe', name: 'Tag翻译' },
+        const configList = [{
+                key: 'chat',
+                name: '右下角聊天气泡',
+                default: true
+            },
+            {
+                key: 'ehsyringe',
+                name: 'Tag翻译'
+            },
         ];
         // ===========================================
 
@@ -169,13 +179,14 @@
             listContainer.innerHTML = ''; // 清空当前列表
 
             configList.forEach(item => {
-                // 读取当前 localStorage 状态
-                const isChecked = localStorage.getItem(item.key) === 'true';
+                const storedValue = localStorage.getItem(item.key);
+                // 如果 storedValue 不等于 null，说明有缓存，就对比字符串；否则使用默认值
+                const isChecked = storedValue !== null ? storedValue === 'true' : item.default;
 
                 // 创建列表项 DOM
                 const li = document.createElement('li');
                 li.className = 'list-item';
-                
+
                 li.innerHTML = `
                     <div class="item-info">
                         <span class="item-name">${item.key}</span>
@@ -192,7 +203,7 @@
                 input.addEventListener('change', (e) => {
                     const key = e.target.getAttribute('data-key');
                     const val = e.target.checked;
-                    
+
                     localStorage.setItem(key, val);
                     console.log(`[Setting] ${key} = ${val}`);
                 });
@@ -205,7 +216,7 @@
          * 重置所有 Key (移除或设为 false)
          */
         function resetAll() {
-            if(!confirm('确定要重置所有开关为默认关闭状态吗？')) return;
+            if (!confirm('确定要重置所有开关为默认关闭状态吗？')) return;
 
             configList.forEach(item => {
                 localStorage.removeItem(item.key); // 或者 localStorage.setItem(item.key, 'false');
@@ -226,7 +237,7 @@
 
         // 初始化
         renderList();
-
     </script>
 </body>
+
 </html>
