@@ -1,192 +1,232 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>脚本加载配置</title>
+    <title>LocalStorage 列表控制器</title>
     <style>
-        /* ================= 样式部分 ================= */
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: #f5f7fa;
+            display: flex;
+            justify-content: center;
+            padding-top: 50px;
+            margin: 0;
             color: #333;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
         }
 
-        h1 {
-            text-align: center;
-            color: #2c3e50;
-            margin-bottom: 5px;
-        }
-
-        /* 版本号显示区域 */
-        #versionDisplay {
-            text-align: center;
-            font-size: 0.85em;
-            color: #7f8c8d;
-            margin-bottom: 25px;
-            font-family: monospace;
-            min-height: 1.2em;
-        }
-
-        /* 列表容器 */
-        .list-container {
+        .container {
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            width: 100%;
+            max-width: 400px;
+            border-radius: 16px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
             overflow: hidden;
-            border: 1px solid #e1e4e8;
+            padding-bottom: 20px;
         }
 
-        /* 单个脚本行 */
-        .script-item {
-            display: flex;
-            align-items: flex-start;
-            padding: 20px;
+        .header {
+            padding: 20px 24px;
+            background: #fff;
             border-bottom: 1px solid #eee;
-            cursor: pointer;
-            transition: background 0.2s ease;
-        }
-
-        .script-item:last-child {
-            border-bottom: none;
-        }
-
-        .script-item:hover {
-            background-color: #f8f9fa;
-        }
-
-        /* 复选框区域 */
-        .checkbox-wrapper {
-            margin-right: 15px;
-            padding-top: 5px;
             display: flex;
+            justify-content: space-between;
             align-items: center;
         }
 
-        input[type="checkbox"] {
-            transform: scale(1.5);
+        h2 {
+            margin: 0;
+            font-size: 1.1rem;
+        }
+
+        .reset-btn {
+            font-size: 0.8rem;
+            color: #ff4d4f;
             cursor: pointer;
-        }
-
-        /* 信息区域 */
-        .script-info {
-            flex-grow: 1;
-        }
-
-        .script-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 6px;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        .script-name {
-            font-weight: 700;
-            font-size: 1.1em;
-            color: #2c3e50;
-        }
-
-        /* 状态徽章 (Enabled/Disabled) */
-        .status-badge {
-            font-size: 0.75em;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-weight: 600;
-        }
-
-        .status-badge.on {
-            background-color: #e6fffa;
-            color: #00b894;
-            border: 1px solid #b3f5e1;
-        }
-
-        .status-badge.off {
-            background-color: #fff5f5;
-            color: #d63031;
-            border: 1px solid #ffcccc;
-        }
-
-        .script-desc {
-            font-size: 0.95em;
-            color: #57606f;
-            line-height: 1.5;
-            margin-bottom: 8px;
-            display: block;
-        }
-
-        .script-url {
-            font-size: 0.75em;
-            color: #a4b0be;
-            font-family: Consolas, Monaco, monospace;
-            background: #f1f2f6;
-            padding: 2px 6px;
+            border: 1px solid #ff4d4f;
+            padding: 4px 10px;
             border-radius: 4px;
-            word-break: break-all;
+            background: transparent;
+            transition: 0.2s;
+        }
+        
+        .reset-btn:hover {
+            background: #fff1f0;
         }
 
-        .footer-hint {
-            margin-top: 20px;
-            font-size: 13px;
-            color: #95a5a6;
-            text-align: center;
+        .list-group {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background 0.2s;
+        }
+
+        .list-item:hover {
+            background-color: #fafafa;
+        }
+
+        .item-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .item-name {
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .item-key {
+            font-size: 0.75rem;
+            color: #999;
+            margin-top: 4px;
+            font-family: monospace;
+        }
+
+        /* --- 开关样式 (iOS 风格) --- */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 28px;
+            flex-shrink: 0; /* 防止开关被挤压 */
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #e0e0e0;
+            transition: .3s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        input:checked + .slider {
+            background-color: #34C759; /* iOS Green */
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(22px);
         }
     </style>
 </head>
-
 <body>
 
-    <h1>脚本功能开关</h1>
-    
-    <!-- 显示版本号的容器 ID: versionDisplay -->
-    <div id="versionDisplay">Loading version...</div>
-
-    <!-- 列表挂载点 ID: scriptList -->
-    <div id="scriptList" class="list-container">
-        <!-- JS 渲染内容将放在这里 -->
+    <div class="container">
+        <div class="header">
+            <h2>功能开关列表</h2>
+            <button class="reset-btn" onclick="resetAll()">重置所有</button>
+        </div>
+        <ul class="list-group" id="switchList">
+            <!-- JS 会在这里动态插入列表项 -->
+        </ul>
     </div>
 
-    <p class="footer-hint">设置将自动保存至 LocalStorage</p>
-
     <script>
-        // ================= 数据定义 =================
-        const STORAGE_KEY = 'custom_loader_scripts';
-        
-        // 固定的脚本列表数据 (用于版本对比和初始化)
-        const FIXED_SCRIPTS = [
-            {
-                name: "tampermonkey polyfill",
-                describe: "基础运行环境",
-                url: "https://config.810114.xyz/exhentai/gm-polyfill.js",
-                defaultEnabled: true
-            },
-            {
-                name: "聊天室",
-                describe: "页面右下角的蓝色社交气泡",
-                url: "https://inline-chat.moonchan.xyz/loader.js",
-                defaultEnabled: true
-            },
-            {
-                name: "EhSyringe (汉化)",
-                describe: "E站注射器：将全站 UI 及 37000+ 标签翻译为中文。",
-                url: "https://config.810114.xyz/exhentai/EhSyringe.user.js",
-                defaultEnabled: false
-            }
+        // ================= 配置区域 =================
+        // 在这里添加你需要控制的开关列表
+        const configList = [
+            { key: 'chat', name: '右下角聊天气泡' },
+            { key: 'ehsyringe', name: 'Tag翻译' },
         ];
+        // ===========================================
 
-        // ================= 逻辑实现区 =================
-        
-        // 请在此处编写你的逻辑：
-        // 1. 读取 localStorage
-        // 2. 版本对比与合并
-        // 3. 渲染 DOM 到 #scriptList
-        // 4. 绑定点击事件并回写 localStorage
-        
+        const listContainer = document.getElementById('switchList');
+
+        /**
+         * 渲染列表
+         */
+        function renderList() {
+            listContainer.innerHTML = ''; // 清空当前列表
+
+            configList.forEach(item => {
+                // 读取当前 localStorage 状态
+                const isChecked = localStorage.getItem(item.key) === 'true';
+
+                // 创建列表项 DOM
+                const li = document.createElement('li');
+                li.className = 'list-item';
+                
+                li.innerHTML = `
+                    <div class="item-info">
+                        <span class="item-name">${item.key}</span>
+                        <span class="item-key">${item.name}</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" data-key="${item.key}" ${isChecked ? 'checked' : ''}>
+                        <span class="slider"></span>
+                    </label>
+                `;
+
+                // 绑定事件
+                const input = li.querySelector('input');
+                input.addEventListener('change', (e) => {
+                    const key = e.target.getAttribute('data-key');
+                    const val = e.target.checked;
+                    
+                    localStorage.setItem(key, val);
+                    console.log(`[Setting] ${key} = ${val}`);
+                });
+
+                listContainer.appendChild(li);
+            });
+        }
+
+        /**
+         * 重置所有 Key (移除或设为 false)
+         */
+        function resetAll() {
+            if(!confirm('确定要重置所有开关为默认关闭状态吗？')) return;
+
+            configList.forEach(item => {
+                localStorage.removeItem(item.key); // 或者 localStorage.setItem(item.key, 'false');
+            });
+            renderList(); // 重新渲染界面
+        }
+
+        /**
+         * 监听其他标签页的修改同步
+         */
+        window.addEventListener('storage', (e) => {
+            // 如果修改的 key 在我们的配置列表中，就刷新列表
+            const isRelated = configList.some(item => item.key === e.key);
+            if (isRelated || e.key === null) { // e.key === null 代表 clear()
+                renderList();
+            }
+        });
+
+        // 初始化
+        renderList();
+
     </script>
 </body>
-
 </html>
