@@ -105,12 +105,13 @@
     </div>
 
     <script>
-        const STORAGE_KEY = 'fixed_loader_settings';
+        // const STORAGE_KEY = 'fixed_loader_settings';
+        const STORAGE_KEY = 'custom_loader_scripts';
 
         // 固定的脚本列表数据
         const FIXED_SCRIPTS = [{
                 name: "tampermonkey polyfill",
-                describe: "基础运行环境（必选，否则其他脚本可能失效）",
+                describe: "基础运行环境",
                 url: "https://config.810114.xyz/exhentai/gm-polyfill.js",
                 defaultEnabled: true
             },
@@ -126,60 +127,60 @@
                 url: "https://config.810114.xyz/exhentai/EhSyringe.user.js",
                 defaultEnabled: false
             },
-            {
-                name: "ComicRead (漫画增强)",
-                describe: "双页阅读、翻页优化，支持 E-Hentai、拷贝漫画、nhentai 等主流站点。",
-                url: "https://config.810114.xyz/exhentai/ComicRead.user.js",
-                defaultEnabled: false
-            },
-            {
-                name: "Ehentai画廊收藏助手",
-                describe: "在画廊页面直接管理收藏和种子下载。",
-                url: "https://config.810114.xyz/exhentai/Ehentai%E7%94%BB%E5%BB%8A%E6%94%B6%E8%97%8F%E5%8A%A9%E6%89%8B.user.js",
-                defaultEnabled: false
-            },
-            {
-                name: "Ehentai画廊收藏助手 (BennyChou 版)",
-                describe: "收藏助手的个人自用修改优化版。",
-                url: "https://config.810114.xyz/exhentai/Ehentai%E7%94%BB%E5%BB%8A%E6%94%B6%E8%97%8F%E5%8A%A9%E6%89%8B%20%28BennyChou%20%E8%87%AA%E7%94%A8%E4%BF%AE%E6%94%B9%E7%89%88%29.user.js",
-                defaultEnabled: false
-            },
-            {
-                name: "解锁 Hath Perks",
-                describe: "解锁站内 Hath 特权及增加辅助小工具。",
-                url: "https://config.810114.xyz/exhentai/Unlock%20Hath%20Perks.user.js",
-                defaultEnabled: false
-            },
-            {
-                name: "东方永页机",
-                describe: "终极自动翻页：加载并拼接下一页内容至当前页尾。",
-                url: "https://config.810114.xyz/exhentai/Pagetual.user.js",
-                defaultEnabled: false
-            },
-            {
-                name: "ExResurrect",
-                describe: "复活已经失效的 E/Ex 画廊列表。",
-                url: "https://config.810114.xyz/exhentai/ExResurrect.user.js",
-                defaultEnabled: false
-            },
-            {
-                name: "Find Panda",
-                describe: "搜索时自动检查 panda.chaika.moe 上的相关画廊。",
-                url: "https://config.810114.xyz/exhentai/find%20panda.user.js",
-                defaultEnabled: false
-            },
-            {
-                name: "Sadpanda Favorites Export",
-                describe: "批量保存/导出收藏夹数据为 JSON。",
-                url: "https://config.810114.xyz/exhentai/Sadpanda%20SaveExport%20All%20Favorites.user.js",
-                defaultEnabled: false
-            },
-            {
-                name: "E-Hentai Downloader",
-                describe: "将画廊直接下载为 Zip 压缩包。",
-                url: "https://config.810114.xyz/exhentai/E-Hentai%20Downloader.user.js",
-                defaultEnabled: false
-            }
+            // {
+            //     name: "ComicRead (漫画增强)",
+            //     describe: "双页阅读、翻页优化，支持 E-Hentai、拷贝漫画、nhentai 等主流站点。",
+            //     url: "https://config.810114.xyz/exhentai/ComicRead.user.js",
+            //     defaultEnabled: false
+            // },
+            // {
+            //     name: "Ehentai画廊收藏助手",
+            //     describe: "在画廊页面直接管理收藏和种子下载。",
+            //     url: "https://config.810114.xyz/exhentai/Ehentai%E7%94%BB%E5%BB%8A%E6%94%B6%E8%97%8F%E5%8A%A9%E6%89%8B.user.js",
+            //     defaultEnabled: false
+            // },
+            // {
+            //     name: "Ehentai画廊收藏助手 (BennyChou 版)",
+            //     describe: "收藏助手的个人自用修改优化版。",
+            //     url: "https://config.810114.xyz/exhentai/Ehentai%E7%94%BB%E5%BB%8A%E6%94%B6%E8%97%8F%E5%8A%A9%E6%89%8B%20%28BennyChou%20%E8%87%AA%E7%94%A8%E4%BF%AE%E6%94%B9%E7%89%88%29.user.js",
+            //     defaultEnabled: false
+            // },
+            // {
+            //     name: "解锁 Hath Perks",
+            //     describe: "解锁站内 Hath 特权及增加辅助小工具。",
+            //     url: "https://config.810114.xyz/exhentai/Unlock%20Hath%20Perks.user.js",
+            //     defaultEnabled: false
+            // },
+            // {
+            //     name: "东方永页机",
+            //     describe: "终极自动翻页：加载并拼接下一页内容至当前页尾。",
+            //     url: "https://config.810114.xyz/exhentai/Pagetual.user.js",
+            //     defaultEnabled: false
+            // },
+            // {
+            //     name: "ExResurrect",
+            //     describe: "复活已经失效的 E/Ex 画廊列表。",
+            //     url: "https://config.810114.xyz/exhentai/ExResurrect.user.js",
+            //     defaultEnabled: false
+            // },
+            // {
+            //     name: "Find Panda",
+            //     describe: "搜索时自动检查 panda.chaika.moe 上的相关画廊。",
+            //     url: "https://config.810114.xyz/exhentai/find%20panda.user.js",
+            //     defaultEnabled: false
+            // },
+            // {
+            //     name: "Sadpanda Favorites Export",
+            //     describe: "批量保存/导出收藏夹数据为 JSON。",
+            //     url: "https://config.810114.xyz/exhentai/Sadpanda%20SaveExport%20All%20Favorites.user.js",
+            //     defaultEnabled: false
+            // },
+            // {
+            //     name: "E-Hentai Downloader",
+            //     describe: "将画廊直接下载为 Zip 压缩包。",
+            //     url: "https://config.810114.xyz/exhentai/E-Hentai%20Downloader.user.js",
+            //     defaultEnabled: false
+            // }
         ];
 
         // 从本地存储读取状态，如果没有则使用默认值
