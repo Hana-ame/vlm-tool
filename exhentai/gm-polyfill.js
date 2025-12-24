@@ -1,5 +1,29 @@
 // polyfill.js
 (function () {
+  // --- 定义 GM_info ---
+  window.GM_info = {
+    script: {
+      name: "Polyfill Script",
+      version: "1.0.0",
+      namespace: "https://example.com/",
+      description: "Simulated Greasemonkey Environment",
+      author: "Developer",
+      includes: [],
+      excludes: [],
+      matches: ["*://*/*"],
+      resources: [],
+      unwrap: false,
+    },
+    scriptHandler: "Tampermonkey", // 模拟脚本管理器名称
+    version: "4.18.0", // 模拟脚本管理器的版本
+    injectInto: "page",
+    platform: {
+      browserName: "Chrome",
+      browserVersion: "120.0.0",
+      os: "Windows",
+    },
+  };
+
   const STORAGE_PREFIX = "GM_STORAGE_";
 
   // --- 1. 内部存储辅助 ---
@@ -218,5 +242,5 @@
     info: window.GM_info,
   };
 
-  window.unsafeWindow = window
+  window.unsafeWindow = window;
 })();
