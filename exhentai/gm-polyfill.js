@@ -136,26 +136,48 @@
   };
 
   window.GM_xmlhttpRequest = function (details) {
-    const xhr = new XMLHttpRequest();
-    xhr.open(details.method || "GET", details.url, true);
-    if (details.headers) {
-      for (const [k, v] of Object.entries(details.headers))
-        xhr.setRequestHeader(k, v);
-    }
-    xhr.onload = () => {
-      const resp = {
-        status: xhr.status,
-        statusText: xhr.statusText,
-        readyState: xhr.readyState,
-        responseText: xhr.responseText,
-        responseHeaders: xhr.getAllResponseHeaders(),
-        response: xhr.response,
-      };
-      if (details.onload) details.onload(resp);
-    };
-    xhr.onerror = (e) => details.onerror && details.onerror(e);
-    xhr.send(details.data || null);
-    return { abort: () => xhr.abort() };
+    const controller = new AbortController();
+
+    fetch(details.url, {
+      method: details.method || "GET",
+      headers: details.headers,
+      body: details.data,
+      referrerPolicy: "no-referrer", // 核心：禁止发送 Referer
+      signal: controller.signal,
+      mode: "cors", // 通常需要跨域支持
+    })
+      .then(async (response) => {
+        // 为了模拟 XHR 的行为，我们需要读取文本内容
+        // 注意：如果处理二进制数据，这里可能需要改为 response.blob() 或 response.arrayBuffer()
+        const text = await response.text();
+
+        // 构造类似 XHR 的响应头字符串
+        const responseHeaders = [...response.headers]
+          .map(([key, value]) => `${key}: ${value}`)
+          .join("\r\n");
+
+        if (details.onload) {
+          details.onload({
+            status: response.status,
+            statusText: response.statusText,
+            readyState: 4, // 模拟 XHR 完成状态
+            responseText: text,
+            response: text,
+            responseHeaders: responseHeaders,
+            finalUrl: response.url,
+          });
+        }
+      })
+      .catch((e) => {
+        // 处理 AbortError 或网络错误
+        if (e.name === "AbortError") {
+          if (details.onabort) details.onabort(e);
+        } else {
+          if (details.onerror) details.onerror(e);
+        }
+      });
+
+    return { abort: () => controller.abort() };
   };
 
   // --- 3. 菜单命令模拟 ---
