@@ -19,7 +19,16 @@ document.body.appendChild(script);
 
 // 创建 script 元素
 var script = document.createElement('script');
-script.src = 'https://config.810114.xyz/exhentai/gscript.js';
+script.src = 'https://config.810114.xyz/exhentai/reader.js';
+script.async = true; // 可选：异步加载
+
+// 添加到 body 末尾
+document.body.appendChild(script);
+
+
+// 创建 script 元素
+var script = document.createElement('script');
+script.src = 'http://localhost:5500/exhentai/reader.js';
 script.async = true; // 可选：异步加载
 
 // 添加到 body 末尾
