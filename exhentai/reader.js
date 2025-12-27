@@ -3,7 +3,7 @@
   // 1. 爬虫与智能缓存模块
   // -----------------------------------------------------------
   const gdt = document.querySelector("#gdt") || document.querySelector(".gdt");
-  const PAGE_URLS = gdt
+  let PAGE_URLS = gdt
     ? Array.from(gdt.querySelectorAll("a"))
         .map((a) => a.href)
         .filter((href) => href.includes("/s/"))
@@ -79,6 +79,12 @@
   // 4. React 组件
   // -----------------------------------------------------------
   btn.onclick = () => {
+    PAGE_URLS = gdt
+      ? Array.from(gdt.querySelectorAll("a"))
+          .map((a) => a.href)
+          .filter((href) => href.includes("/s/"))
+      : [];
+
     if (!PAGE_URLS.length) return alert("No links");
     document.body.innerHTML = '<div id="root"></div>';
     Object.assign(document.body.style, {
