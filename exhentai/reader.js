@@ -79,6 +79,8 @@
   // 4. React 组件
   // -----------------------------------------------------------
   btn.onclick = () => {
+    const gdt =
+      document.querySelector("#gdt") || document.querySelector(".gdt");
     PAGE_URLS = gdt
       ? Array.from(gdt.querySelectorAll("a"))
           .map((a) => a.href)
