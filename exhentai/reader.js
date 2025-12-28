@@ -198,7 +198,8 @@
         {
           style: {
             display: "grid",
-            placeItems: "center", // 堆叠布局
+            // placeItems: "center", // 堆叠布局
+            justifyItems: "center",
             width: "100vw",
             height: "100vh",
             background: "#000",
