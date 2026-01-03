@@ -101,6 +101,9 @@
     // 3. 重新加载封面功能
     // =========================================================================
     function initReloadCover() {
+        if (localStorage.getItem("waterfall") === "false") {
+            return;
+        }
         // 检查是否存在 gl3t 元素
         const gl3tElements = document.getElementsByClassName('gl3t');
         if (gl3tElements.length === 0) return;
