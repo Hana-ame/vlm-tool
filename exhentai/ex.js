@@ -70,7 +70,7 @@
         // 执行替换
         let newSrc = originalSrc.replace(targetRegex, "https://ehgt.org");
         // 重新设置属性
-        div.setAttribute("src", newSrc);
+        img.setAttribute("src", newSrc);
       }
     });
     {
@@ -81,7 +81,7 @@
           // 执行替换
           let newSrc = originalSrc.replace(targetRegex, "https://ehgt.org");
           // 重新设置属性
-          div.setAttribute("src", newSrc);
+          img.setAttribute("src", newSrc);
         }
       });
     }
@@ -616,7 +616,7 @@
   }
 
   function main() {
-    console.log(1543);
+    console.log(1546);
     fixBaseUrls(); // 1. URL 替换
     injectStyles(); // 2. 样式注入
     initReloadCover(); // 3. 封面重载 (列表页)
