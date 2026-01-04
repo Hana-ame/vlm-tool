@@ -27,6 +27,33 @@
     // 解释：https:\/\/ 匹配协议，(?:s\.)? 匹配可选的 "s." 子域名，exhentai\.org 匹配主域名
     const targetRegex = /https:\/\/(?:s\.)?exhentai\.org/g;
 
+    {
+      // 选择所有 href 包含 exhentai.org 的 link 标签
+      const links = document.querySelectorAll('link[href*="exhentai.org"]');
+      links.forEach(function (link) {
+        let originalHref = link.getAttribute("href");
+        if (originalHref) {
+          // 执行替换，这里的 targetRegex 需对应您定义的正则
+          // 如果是想把 exhentai.org 替换掉，可以将 targetRegex 设为 /exhentai\.org/
+          let newHref = originalHref.replace(targetRegex, "");
+          // 重新设置 href 属性
+          link.setAttribute("href", newHref);
+        }
+      });
+    }
+    {
+      // 选择所有 src 包含 exhentai.org 的 script 标签
+      const scripts = document.querySelectorAll('script[src*="exhentai.org"]');
+      scripts.forEach(function (script) {
+        let originalSrc = script.getAttribute("src");
+        if (originalSrc) {
+          // 执行替换 (使用您定义的 targetRegex)
+          let newSrc = originalSrc.replace(targetRegex, "");
+          // 重新设置 src 属性
+          script.setAttribute("src", newSrc);
+        }
+      });
+    }
     // 1. 处理 <a> 标签中的 onclick 属性
     const anchors = document.querySelectorAll('a[onclick*="exhentai.org"]');
     anchors.forEach(function (a) {
@@ -58,7 +85,10 @@
         let originalStyle = div.getAttribute("style");
         if (originalStyle) {
           // 执行替换
-          let newStyle = originalStyle.replace("https://s.exhentai.org/w/", "https://ehgt.org/w/");
+          let newStyle = originalStyle.replace(
+            "https://s.exhentai.org/w/",
+            "https://ehgt.org/w/"
+          );
           // 重新设置属性
           div.setAttribute("style", newStyle);
         }
@@ -132,23 +162,100 @@
   // 1. 基础 URL 替换功能 (对应 Go 中的 bytes.ReplaceAll)
   // =========================================================================
   function fixBaseUrls() {
-    // 替换所有 A 标签的 href
-    const links = document.getElementsByTagName("a");
-    for (let i = 0; i < links.length; i++) {
-      let href = links[i].href;
-      if (href.includes("https://exhentai.org")) {
-        links[i].href = href.replace("https://exhentai.org", "");
-      }
-    }
+    (function () {
+      // 定义要替换的目标：匹配 https://exhentai.org 以及 https://s.exhentai.org
+      const targetRegex = /https:\/\/(?:s\.)?exhentai\.org/g;
 
-    // 替换所有 IMG 标签的 src
-    const imgs = document.getElementsByTagName("img");
-    for (let i = 0; i < imgs.length; i++) {
-      let src = imgs[i].src;
-      if (src.includes("https://s.exhentai.org")) {
-        imgs[i].src = src.replace("https://s.exhentai.org", "https://ehgt.org");
-      }
-    }
+      /**
+       * 1. 通用替换配置
+       * selector: 选择器
+       * attr: 要修改的属性
+       * replaceWith: 替换后的内容（默认为空字符串，即转为相对路径）
+       */
+      const tasks = [
+        {
+          selector: 'a[href*="exhentai.org"]',
+          attr: "href",
+          replaceWith: "",
+        },
+        {
+          selector: 'a[onclick*="exhentai.org"]',
+          attr: "onclick",
+          replaceWith: "",
+        },
+        {
+          selector: 'div[onclick*="exhentai.org"]',
+          attr: "onclick",
+          replaceWith: "",
+        },
+        {
+          selector: 'link[href*="exhentai.org"]',
+          attr: "href",
+          replaceWith: "",
+        },
+        {
+          selector: 'form[action*="exhentai.org"]',
+          attr: "action",
+          replaceWith: "",
+        },
+        // div 的 style 属性通常包含背景图，按照您的逻辑优先处理特定的 w/ 路径
+        {
+          selector: 'div[style*="exhentai.org"]',
+          attr: "style",
+          replaceWith: "",
+        },
+        // 图片通常映射到 ehgt.org
+        {
+          selector: 'img[src*="exhentai.org"]',
+          attr: "src",
+          replaceWith: "https://ehgt.org",
+        },
+      ];
+
+      // 执行通用任务
+      tasks.forEach(({ selector, attr, replaceWith }) => {
+        const elements = document.querySelectorAll(selector);
+        elements.forEach((el) => {
+          let oldVal = el.getAttribute(attr);
+          if (oldVal) {
+            let newVal = oldVal;
+            // 特殊处理：如果是 style 属性，先处理特定的静态资源前缀映射
+            if (attr === "style") {
+              newVal = newVal.replace(
+                "https://s.exhentai.org/w/",
+                "https://ehgt.org/w/"
+              );
+            }
+            // 执行主正则替换
+            newVal = newVal.replace(targetRegex, replaceWith);
+            el.setAttribute(attr, newVal);
+          }
+        });
+      });
+
+      /**
+       * 2. 特殊处理：Script 标签
+       * 脚本修改 src 后通常不会自动重新触发加载，因此需要重新创建并插入
+       */
+      const scripts = document.querySelectorAll('script[src*="exhentai.org"]');
+      scripts.forEach((oldScript) => {
+        const originalSrc = oldScript.getAttribute("src");
+        if (originalSrc) {
+          const newSrc = originalSrc.replace(targetRegex, "");
+          const newScript = document.createElement("script");
+          newScript.src = newSrc;
+          newScript.type = "text/javascript";
+
+          // 插入新脚本并移除旧脚本
+          if (oldScript.parentNode) {
+            oldScript.parentNode.insertBefore(newScript, oldScript.nextSibling);
+            oldScript.remove();
+          }
+        }
+      });
+
+      console.log("替换完成：已处理 A, DIV, LINK, SCRIPT, FORM, IMG 的属性。");
+    })();
   }
   // =========================================================================
   // 2. CSS 样式注入 (已适配移动端)
