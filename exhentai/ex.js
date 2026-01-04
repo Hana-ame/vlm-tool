@@ -19,9 +19,9 @@
     // 如果不是黑名单域名，则正常执行
     return originalOpen.apply(this, arguments);
   };
-  
-(function() {
-    'use strict';
+
+  (function () {
+    "use strict";
 
     // 定义要替换的目标：匹配 https://exhentai.org 以及 https://s.exhentai.org
     // 解释：https:\/\/ 匹配协议，(?:s\.)? 匹配可选的 "s." 子域名，exhentai\.org 匹配主域名
@@ -29,31 +29,31 @@
 
     // 1. 处理 <a> 标签中的 onclick 属性
     const anchors = document.querySelectorAll('a[onclick*="exhentai.org"]');
-    anchors.forEach(function(a) {
-        let originalOnClick = a.getAttribute('onclick');
-        if (originalOnClick) {
-            // 执行替换
-            let newOnClick = originalOnClick.replace(targetRegex, '');
-            // 重新设置属性
-            a.setAttribute('onclick', newOnClick);
-        }
+    anchors.forEach(function (a) {
+      let originalOnClick = a.getAttribute("onclick");
+      if (originalOnClick) {
+        // 执行替换
+        let newOnClick = originalOnClick.replace(targetRegex, "");
+        // 重新设置属性
+        a.setAttribute("onclick", newOnClick);
+      }
     });
 
     // 2. 处理 <div> 标签中的 style 属性 (背景图片 URL)
     const divs = document.querySelectorAll('div[style*="exhentai.org"]');
-    divs.forEach(function(div) {
-        let originalStyle = div.getAttribute('style');
-        if (originalStyle) {
-            // 执行替换
-            let newStyle = originalStyle.replace(targetRegex, '');
-            // 重新设置属性
-            div.setAttribute('style', newStyle);
-        }
+    divs.forEach(function (div) {
+      let originalStyle = div.getAttribute("style");
+      if (originalStyle) {
+        // 执行替换
+        let newStyle = originalStyle.replace(targetRegex, "");
+        // 重新设置属性
+        div.setAttribute("style", newStyle);
+      }
     });
 
     console.log("替换完成：已移除链接和样式中的绝对域名前缀。");
-})();
-  
+  })();
+
   // =========================================================================
   // 1. 基础 URL 替换功能 (对应 Go 中的 bytes.ReplaceAll)
   // =========================================================================
@@ -208,10 +208,10 @@
     const gl3tElements = document.getElementsByClassName("gl3t");
     if (gl3tElements.length === 0) return;
 
-// 1. 创建按钮容器
-const container = document.createElement("div");
-// 直接将需求中的 style 属性原样复制进来
-container.style.cssText = `
+    // 1. 创建按钮容器
+    const container = document.createElement("div");
+    // 直接将需求中的 style 属性原样复制进来
+    container.style.cssText = `
     height: 60px;
     width: 100px;
     text-align: center;
@@ -223,23 +223,23 @@ container.style.cssText = `
     vertical-align: middle;
 `;
 
-// 2. 创建按钮
-const btn = document.createElement("button");
-btn.id = "reload-cover";
-btn.innerText = "重新加载封面";
-// 直接将需求中的 style 属性复制进来
-// 注意：原 HTML 中是 display: none，但根据你 JS 注释 "直接判断后显示"，
-// 这里我将其改为 display: block 以便代码运行后你能直接看到按钮
-btn.style.cssText = `
+    // 2. 创建按钮
+    const btn = document.createElement("button");
+    btn.id = "reload-cover";
+    btn.innerText = "重新加载封面";
+    // 直接将需求中的 style 属性复制进来
+    // 注意：原 HTML 中是 display: none，但根据你 JS 注释 "直接判断后显示"，
+    // 这里我将其改为 display: block 以便代码运行后你能直接看到按钮
+    btn.style.cssText = `
     width: 100%;    
     height: 100%;
     font-size: x-large;
     display: block; 
 `;
 
-// 3. 组装并添加到页面
-container.appendChild(btn);
-document.body.appendChild(container);
+    // 3. 组装并添加到页面
+    container.appendChild(btn);
+    document.body.appendChild(container);
 
     // 绑定点击事件
     btn.addEventListener(
@@ -273,7 +273,6 @@ document.body.appendChild(container);
   // 4. 瀑布流 (Waterfall) 与 复制外链功能 (已适配触屏)
   // =========================================================================
   function initWaterfall() {
-
     if (!location.pathname.startsWith("/s/")) return;
 
     (function () {
@@ -542,9 +541,7 @@ document.body.appendChild(container);
             <div style="padding: 10px; font-size: 14px;">
                 <p>moonchan.xyz有DNS污染迹象，请注意迁移到以下节点</p>
                 <p style="color: black;">New:<a href="https://ex.810114.xyz/" target="_blank">https://ex.810114.xyz/</a>（无污染永续）</p>			
-                <p style="color: black;">新年快乐，更新一下程序，所以1月1日可能麻烦大家挡一下小白鼠</p>			
-                <p><a style="color: black;" href="/uconfig.php">点击上方Settings（点这句话也可以）选择希望开启的脚本</a></p>
-                <p><a style="color: black;" href="/uconfig.php">有的脚本没做是因为有技术限制，有想要的tamper monkey脚本可以发一下做fork，来https://810114.xyz/ (去掉ex就行)</a></p>
+                <p style="color: black;">更了下程序，如果有问题，及时反馈<a href="https://810114.xyz/" target="_blank">https://810114.xyz/</a></p>			
             </div>
         `;
     document.body.appendChild(div);
