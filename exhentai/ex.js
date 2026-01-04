@@ -320,7 +320,7 @@
       "click",
       async function () {
         window.stop();
-        replace = function (elements) {
+        const replace = function (elements) {
           for (let i = 0; i < elements.length; i++) {
             const links = elements[i].getElementsByTagName("a");
             for (let j = 0; j < links.length; j++) {
