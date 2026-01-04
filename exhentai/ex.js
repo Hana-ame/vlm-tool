@@ -51,6 +51,17 @@
       }
     });
 
+    const imgs = document.querySelectorAll('img[src*="exhentai.org"]');
+    imgs.forEach(function (img) {
+      let originalSrc = img.getAttribute("src");
+      if (originalSrc) {
+        // 执行替换
+        let newSrc = originalSrc.replace(targetRegex, "https://ehgt.org");
+        // 重新设置属性
+        div.setAttribute("src", newSrc);
+      }
+    });
+
     console.log("替换完成：已移除链接和样式中的绝对域名前缀。");
   })();
 
