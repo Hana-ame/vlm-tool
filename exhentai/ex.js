@@ -148,9 +148,12 @@
         const newScript = document.createElement("script");
         newScript.src = newSrc;
         newScript.type = "text/javascript";
+        // 显式声明异步，有时能解决加载死锁
+        newScript.async = true; 
 
-        // 将新脚本插入到旧脚本之后，并移除旧脚本
-        oldScript.parentNode.insertBefore(newScript, oldScript.nextSibling);
+        // 2. 关键修改：直接插入到 head 中，确保环境稳定
+        document.head.appendChild(newScript);
+
         oldScript.remove();
       }
     });
