@@ -221,6 +221,9 @@
   // 4. 瀑布流 (Waterfall) 与 复制外链功能 (已适配触屏)
   // =========================================================================
   function initWaterfall() {
+    if (!location.pathname.startsWith("/s/")) {
+      return;
+    }
     (function () {
       "use strict";
 
