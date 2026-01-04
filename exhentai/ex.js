@@ -208,20 +208,38 @@
     const gl3tElements = document.getElementsByClassName("gl3t");
     if (gl3tElements.length === 0) return;
 
-    // 创建按钮容器
-    const container = document.createElement("div");
-    container.className = "custom-btn-container";
-    // 如果页面也有瀑布流按钮，可能需要调整位置，这里保持原逻辑覆盖或共存
-    // 原逻辑是分别注入的，这里我们根据页面内容判断显示哪个
+// 1. 创建按钮容器
+const container = document.createElement("div");
+// 直接将需求中的 style 属性原样复制进来
+container.style.cssText = `
+    height: 60px;
+    width: 100px;
+    text-align: center;
+    position: fixed;
+    right: 20px; 
+    top: 20px;
+    z-index: 99;
+    display: table-cell;
+    vertical-align: middle;
+`;
 
-    const btn = document.createElement("button");
-    btn.id = "reload-cover";
-    btn.className = "custom-btn";
-    btn.style.display = "block"; // 原逻辑是 none 然后 js 变 block，这里直接判断后显示
-    btn.innerText = "重新加载封面";
+// 2. 创建按钮
+const btn = document.createElement("button");
+btn.id = "reload-cover";
+btn.innerText = "重新加载封面";
+// 直接将需求中的 style 属性复制进来
+// 注意：原 HTML 中是 display: none，但根据你 JS 注释 "直接判断后显示"，
+// 这里我将其改为 display: block 以便代码运行后你能直接看到按钮
+btn.style.cssText = `
+    width: 100%;    
+    height: 100%;
+    font-size: x-large;
+    display: block; 
+`;
 
-    container.appendChild(btn);
-    document.body.appendChild(container);
+// 3. 组装并添加到页面
+container.appendChild(btn);
+document.body.appendChild(container);
 
     // 绑定点击事件
     btn.addEventListener(
