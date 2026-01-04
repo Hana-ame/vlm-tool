@@ -21,6 +21,9 @@
             if (src.includes('https://s.exhentai.org')) {
                 imgs[i].src = src.replace('https://s.exhentai.org', 'https://ehgt.org');
             }
+            if (src.includes('https://exhentai.org')) {
+                imgs[i].src = src.replace('https://exhentai.org', 'https://ehgt.org');
+            }
         }
     }
 
