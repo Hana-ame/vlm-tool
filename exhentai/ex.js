@@ -52,6 +52,18 @@
       });
     }
     // 2. 处理 <div> 标签中的 style 属性 (背景图片 URL)
+    {
+      const divs = document.querySelectorAll('div[style*="exhentai.org"]');
+      divs.forEach(function (div) {
+        let originalStyle = div.getAttribute("style");
+        if (originalStyle) {
+          // 执行替换
+          let newStyle = originalStyle.replace("https://s.exhentai.org/w/", "https://ehgt.org/w/");
+          // 重新设置属性
+          div.setAttribute("style", newStyle);
+        }
+      });
+    }
     const divs = document.querySelectorAll('div[style*="exhentai.org"]');
     divs.forEach(function (div) {
       let originalStyle = div.getAttribute("style");
