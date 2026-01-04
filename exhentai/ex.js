@@ -38,7 +38,19 @@
         a.setAttribute("onclick", newOnClick);
       }
     });
-
+    {
+      // 1. 处理 <a> 标签中的 onclick 属性
+      const anchors = document.querySelectorAll('a[href*="exhentai.org"]');
+      anchors.forEach(function (a) {
+        let originalOnClick = a.getAttribute("href");
+        if (originalOnClick) {
+          // 执行替换
+          let newOnClick = originalOnClick.replace(targetRegex, "");
+          // 重新设置属性
+          a.setAttribute("href", newOnClick);
+        }
+      });
+    }
     // 2. 处理 <div> 标签中的 style 属性 (背景图片 URL)
     const divs = document.querySelectorAll('div[style*="exhentai.org"]');
     divs.forEach(function (div) {
@@ -59,6 +71,23 @@
         let newSrc = originalSrc.replace(targetRegex, "https://ehgt.org");
         // 重新设置属性
         div.setAttribute("src", newSrc);
+      }
+    });
+
+    const scripts = document.querySelectorAll('script[src*="exhentai.org"]');
+    scripts.forEach(function (oldScript) {
+      let originalSrc = oldScript.getAttribute("src");
+      if (originalSrc) {
+        let newSrc = originalSrc.replace(targetRegex, "");
+
+        // 创建一个新的 script 标签以触发加载
+        const newScript = document.createElement("script");
+        newScript.src = newSrc;
+        newScript.type = "text/javascript";
+
+        // 将新脚本插入到旧脚本之后，并移除旧脚本
+        oldScript.parentNode.insertBefore(newScript, oldScript.nextSibling);
+        oldScript.remove();
       }
     });
 
