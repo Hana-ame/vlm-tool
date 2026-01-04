@@ -42,9 +42,8 @@
             }
         }
     }
-
-    // =========================================================================
-    // 2. CSS 样式注入 (合并了悬浮窗等所需的 CSS)
+// =========================================================================
+    // 2. CSS 样式注入 (已适配移动端)
     // =========================================================================
     function injectStyles() {
         const style = document.createElement('style');
@@ -61,7 +60,7 @@
                 box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
                 z-index: 100000;
                 overflow: hidden;
-                background-color: rgba(255,255,255,0.5);
+                background-color: rgba(255,255,255,0.9);
             }
             #moonchan-close-button {
                 position: absolute;
@@ -79,38 +78,86 @@
                 line-height: 48px;
                 transition: 0.2s;
             }
-            #moonchan-close-button:after {
-                content: '';
-                position: absolute;
-                top: -10px;
-                right: -10px;
-                bottom: -10px;
-                left: -10px;
-            }
-            #moonchan-close-button:active {
-                transform: scale(0.9);
-            }
-            #moonchan-close-button[disabled] {
-                opacity: 0.6;
-                pointer-events: none;
-            }
             
-            /* 通用按钮容器样式 */
+            /* 按钮容器默认样式 (PC) */
             .custom-btn-container {
                 height: 60px;
                 width: 100px;
                 text-align: center;
                 position: fixed;
+                z-index: 999; /* 提高层级防止被遮挡 */
+                display: flex;
+                flex-direction: column;
+                gap: 5px;
+            }
+
+            /* 右侧按钮位置 (默认) */
+            .right-container {
                 right: 20px; 
                 top: 20px;
-                z-index: 99;
-                display: table-cell;
-                vertical-align: middle;
             }
+
+            /* 左侧按钮位置 (默认) */
+            .left-container {
+                left: 20px; 
+                top: 20px;
+            }
+
             .custom-btn {
                 width: 100%;    
-                height: 100%;
-                font-size: x-large;
+                flex: 1;
+                font-size: 16px;
+                cursor: pointer;
+                border: 1px solid #999;
+                background: rgba(255, 255, 255, 0.8);
+                color: #000;
+                font-weight: bold;
+            }
+
+            /* === 移动端触屏适配 (屏幕宽度 < 768px) === */
+            @media screen and (max-width: 768px) {
+                /* 调整悬浮窗位置和大小 */
+                #moonchan-floating-iframe {
+                    width: 90%;
+                    left: 5%;
+                    bottom: 10px;
+                    right: auto;
+                    font-size: 12px;
+                }
+
+                /* 移动端按钮容器样式 */
+                .custom-btn-container {
+                    width: 70px; /* 稍微变窄 */
+                    height: auto;
+                }
+
+                /* 右侧按钮：移至右下角拇指易触区域 */
+                .right-container {
+                    top: auto;
+                    bottom: 150px; /* 避开底部导航栏或悬浮窗 */
+                    right: 10px;
+                }
+
+                /* 左侧按钮：移至左下角或折叠，避免遮挡顶部 */
+                .left-container {
+                    top: auto;
+                    bottom: 150px;
+                    left: 10px;
+                }
+
+                /* 按钮样式优化：增加点击热区，增加透明度防止遮挡 */
+                .custom-btn {
+                    padding: 10px 0;
+                    font-size: 14px;
+                    opacity: 0.7; /* 半透明 */
+                    border-radius: 8px;
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+                }
+                
+                .custom-btn:active {
+                    opacity: 1;
+                    background: #eee;
+                }
             }
         `;
         document.head.appendChild(style);
@@ -166,102 +213,113 @@
             replace(gl1eElements);
         }, false);
     }
-
     // =========================================================================
-    // 4. 瀑布流 (Waterfall) 与 复制外链功能
+    // 4. 瀑布流 (Waterfall) 与 复制外链功能 (已适配触屏)
     // =========================================================================
     function initWaterfall() {
         if (localStorage.getItem("waterfall") === "false") {
             return;
         }
-        // 简单判断：如果页面有 #i1 (通常是图片页) 或者特定的阅读器结构，才加载瀑布流按钮
-        // 原代码直接替换 body，比较粗暴。这里假设如果不含 gl3t (列表页特征)，可能是详情/阅读页
-        // 或者我们可以检查是否存在 'gdt' 或 'i1' 等特征 ID
-        // 为避免冲突，这里仅当页面存在 id="i1" 或 id="img" 时视为阅读页
+        
+        // 判断是否为阅读页 (含 i1 或 img)
         if (!document.getElementById('i1') && !document.getElementById('img')) return;
 
-        // 右上角按钮容器
+        // 右侧按钮容器 (下拉式)
         const rightContainer = document.createElement('div');
-        rightContainer.className = 'custom-btn-container';
+        rightContainer.className = 'custom-btn-container right-container';
         
         const btn1 = document.createElement('button');
         btn1.id = 'waterfall';
         btn1.className = 'custom-btn';
-        btn1.innerText = '下拉式1';
-        btn1.style.height = '50%'; // 两个按钮各占一半
+        btn1.innerText = '下拉阅读'; // 文案微调，更直观
         
         const btn2 = document.createElement('button');
         btn2.id = 'waterfall2';
         btn2.className = 'custom-btn';
-        btn2.innerText = '下拉式2';
-        btn2.style.height = '50%';
-
+        btn2.innerText = '备用模式'; // 文案微调
+        
         rightContainer.appendChild(btn1);
         rightContainer.appendChild(btn2);
         document.body.appendChild(rightContainer);
 
-        // 左上角按钮容器 (复制外链)
+        // 左侧按钮容器 (复制外链)
         const leftContainer = document.createElement('div');
-        leftContainer.style.cssText = `
-            height: 60px;
-            width: 100px;
-            text-align: center;
-            position: fixed;
-            left: 20px; 
-            top: 20px;
-            z-index: 99;
-        `;
+        leftContainer.className = 'custom-btn-container left-container';
+        
         const originBtn = document.createElement('button');
         originBtn.id = 'originBtn';
         originBtn.className = 'custom-btn';
-        originBtn.innerText = '复制图片外链';
+        originBtn.innerText = '复制外链';
         leftContainer.appendChild(originBtn);
         document.body.appendChild(leftContainer);
 
         // --- 事件逻辑 ---
 
-        // 下拉式1
+        // 下拉式1 (主逻辑)
         btn1.addEventListener("click", async function () {
             console.log('Starting Waterfall 1');
-            // 移除按钮
-            if(document.getElementById("originBtn")) document.getElementById("originBtn").remove();
-            if(document.getElementById("waterfall")) document.getElementById("waterfall").remove();
-            if(document.getElementById("waterfall2")) document.getElementById("waterfall2").remove();
+            
+            // 隐藏按钮防止遮挡视线
+            rightContainer.style.display = 'none';
+            leftContainer.style.display = 'none';
 
+            // 创建容器
             const pn = document.createElement('div');
-            let lp = location.href;
-            let ln = location.href;
+            pn.style.textAlign = 'center'; // 图片居中
             const element = document.getElementById('i1');
             if(element) element.appendChild(pn);
 
+            // 显示加载状态
+            const statusMsg = document.createElement('div');
+            statusMsg.innerText = "正在加载瀑布流...";
+            statusMsg.style.cssText = "padding: 10px; color: #666; font-size: 14px;";
+            pn.appendChild(statusMsg);
+
+            let lp = location.href;
+            let ln = location.href;
             let nextLink = document.getElementById('next');
             let hn = nextLink ? nextLink.href : ln;
 
             while (hn !== ln && hn) {
                 let doc;
                 let retries = 0;
+                
+                // 获取下一页 DOM
                 while (!doc && retries < 3) {
                     try {
+                        statusMsg.innerText = `正在加载: ${hn.split('-').pop()}...`; // 提示当前页码
                         const data = await fetch(hn).then(resp => resp.text());
-                        console.log("Fetched next page");
                         const parser = new DOMParser();
                         doc = parser.parseFromString(data, "text/html");
                     } catch (e) {
                         console.error(e);
                         retries++;
+                        await new Promise(r => setTimeout(r, 1000)); // 失败延迟重试
                     }
                 }
                 
                 if(!doc) break;
 
-                const imgElem = document.createElement('img');
                 const remoteImg = doc.getElementById('img');
                 if (remoteImg) {
-                    imgElem.src = remoteImg.src;
-                    imgElem.style.maxWidth = '100%'; // 优化显示
+                    const imgElem = document.createElement('img');
+                    let src = remoteImg.src;
+                    
+                    // 应用与 fixBaseUrls 相同的替换逻辑，防止图裂
+                    if (src.includes('https://s.exhentai.org')) {
+                        src = src.replace('https://s.exhentai.org', 'https://ehgt.org');
+                    }
+                    imgElem.src = src;
+
+                    // 移动端核心样式适配：宽度100%，高度自动
+                    imgElem.style.width = '100%';
+                    imgElem.style.height = 'auto';
                     imgElem.style.display = 'block';
-                    imgElem.style.margin = '0 auto';
-                    pn.appendChild(imgElem);
+                    imgElem.style.margin = '0 auto 5px auto'; // 增加一点下间距
+                    imgElem.style.maxWidth = '1200px'; // 限制最大宽度，防止PC端过大
+
+                    // 插入图片到提示信息之前
+                    pn.insertBefore(imgElem, statusMsg);
                     
                     ln = hn;
                     const nextEl = doc.getElementById('next');
@@ -270,9 +328,7 @@
                     break;
                 }
             }
-            const p = document.createElement('p');
-            p.innerText = "End of gallery or error.";
-            pn.appendChild(p);
+            statusMsg.innerText = "--- END ---";
         }, false);
 
         // 下拉式2
@@ -282,15 +338,20 @@
             window.location.href = newUrl;
         }, false);
 
-        // 复制外链
+        // 复制外链 (保持原逻辑，增加了简单的UI反馈)
         originBtn.addEventListener("click", function () {
             const currentUrl = window.location.href;
             const hasQuery = currentUrl.includes('?');
             const newUrl = currentUrl + (hasQuery ? '&' : '?') + 'redirect_to=image';
 
+            const originalText = originBtn.innerText;
+            
             if (navigator.clipboard) {
                 navigator.clipboard.writeText(newUrl)
-                    .then(() => alert('已复制到剪贴板！'))
+                    .then(() => {
+                        originBtn.innerText = '已复制!';
+                        setTimeout(() => originBtn.innerText = originalText, 2000);
+                    })
                     .catch(() => fallbackCopy(newUrl));
             } else {
                 fallbackCopy(newUrl);
@@ -303,7 +364,8 @@
                 input.select();
                 try {
                     document.execCommand('copy');
-                    alert('已复制（兼容模式）');
+                    originBtn.innerText = '已复制!';
+                    setTimeout(() => originBtn.innerText = originalText, 2000);
                 } catch (err) {
                     alert('复制失败，请手动复制');
                 } finally {
