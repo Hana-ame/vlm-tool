@@ -1,6 +1,25 @@
 (function () {
     'use strict';
 
+    // 不让访问s.exhentai.org
+    const originalOpen = XMLHttpRequest.prototype.open;
+    const BLOCKED_DOMAIN = 's.exhentai.org';
+    
+    XMLHttpRequest.prototype.open = function(method, url) {
+        // 将 url 转换为字符串（以防传入的是 URL 对象）
+        const urlString = String(url);
+    
+        // 检查是否包含禁止的域名
+        if (urlString.includes(BLOCKED_DOMAIN)) {
+            console.error(`不样: ${urlString}`);
+            // 抛出异常以阻止请求发送
+            throw new Error('Blocked: Request to s.exhentai.org is not allowed.');
+        }
+        
+        // 如果不是黑名单域名，则正常执行
+        return originalOpen.apply(this, arguments);
+    };
+    
     // =========================================================================
     // 1. 基础 URL 替换功能 (对应 Go 中的 bytes.ReplaceAll)
     // =========================================================================
