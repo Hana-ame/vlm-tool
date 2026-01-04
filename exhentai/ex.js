@@ -62,7 +62,18 @@
         div.setAttribute("style", newStyle);
       }
     });
-
+    {
+      const divs = document.querySelectorAll('div[onclick*="exhentai.org"]');
+      divs.forEach(function (div) {
+        let originalStyle = div.getAttribute("style");
+        if (originalStyle) {
+          // 执行替换
+          let newStyle = originalStyle.replace(targetRegex, "");
+          // 重新设置属性
+          div.setAttribute("style", newStyle);
+        }
+      });
+    }
     const imgs = document.querySelectorAll('img[src*="exhentai.org"]');
     imgs.forEach(function (img) {
       let originalSrc = img.getAttribute("src");
@@ -616,7 +627,7 @@
   }
 
   function main() {
-    console.log(1546);
+    console.log(1549);
     fixBaseUrls(); // 1. URL 替换
     injectStyles(); // 2. 样式注入
     initReloadCover(); // 3. 封面重载 (列表页)
