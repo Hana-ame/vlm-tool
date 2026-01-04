@@ -21,9 +21,6 @@
             if (src.includes('https://s.exhentai.org')) {
                 imgs[i].src = src.replace('https://s.exhentai.org', 'https://ehgt.org');
             }
-            if (src.includes('https://exhentai.org')) {
-                imgs[i].src = src.replace('https://exhentai.org', 'https://ehgt.org');
-            }
         }
     }
 
@@ -129,20 +126,25 @@
         // 绑定点击事件
         btn.addEventListener("click", async function () {
             window.stop();
-            const gl3tElements = document.getElementsByClassName('gl3t');
-            for (let i = 0; i < gl3tElements.length; i++) {
-                const links = gl3tElements[i].getElementsByTagName('a');
-                for (let j = 0; j < links.length; j++) {
-                    const href = links[j].href;
-                    console.log(links[j]);
-                    const imgs = links[j].getElementsByTagName('img');
-                    for (let k = 0; k < imgs.length; k++) {
-                        // 修正：确保拼接参数正确
-                        const separator = href.includes('?') ? '&' : '?';
-                        imgs[k].src = href + separator + 'redirect_to=cover';
+            replace = function(elements){
+                for (let i = 0; i < elements.length; i++) {
+                    const links = elements[i].getElementsByTagName('a');
+                    for (let j = 0; j < links.length; j++) {
+                        const href = links[j].href;
+                        console.log(links[j]);
+                        const imgs = links[j].getElementsByTagName('img');
+                        for (let k = 0; k < imgs.length; k++) {
+                            // 修正：确保拼接参数正确
+                            const separator = href.includes('?') ? '&' : '?';
+                            imgs[k].src = href + separator + 'redirect_to=cover';
+                        }
                     }
                 }
             }
+            const gl3tElements = document.getElementsByClassName('gl3t');
+            replace(gl3tElements);
+            const gl1eElements =  document.getElementsByClassName('gl1e');
+            replace(gl1eElements);
         }, false);
     }
 
