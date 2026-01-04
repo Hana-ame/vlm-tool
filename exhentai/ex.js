@@ -19,7 +19,41 @@
     // 如果不是黑名单域名，则正常执行
     return originalOpen.apply(this, arguments);
   };
+  
+(function() {
+    'use strict';
 
+    // 定义要替换的目标：匹配 https://exhentai.org 以及 https://s.exhentai.org
+    // 解释：https:\/\/ 匹配协议，(?:s\.)? 匹配可选的 "s." 子域名，exhentai\.org 匹配主域名
+    const targetRegex = /https:\/\/(?:s\.)?exhentai\.org/g;
+
+    // 1. 处理 <a> 标签中的 onclick 属性
+    const anchors = document.querySelectorAll('a[onclick*="exhentai.org"]');
+    anchors.forEach(function(a) {
+        let originalOnClick = a.getAttribute('onclick');
+        if (originalOnClick) {
+            // 执行替换
+            let newOnClick = originalOnClick.replace(targetRegex, '');
+            // 重新设置属性
+            a.setAttribute('onclick', newOnClick);
+        }
+    });
+
+    // 2. 处理 <div> 标签中的 style 属性 (背景图片 URL)
+    const divs = document.querySelectorAll('div[style*="exhentai.org"]');
+    divs.forEach(function(div) {
+        let originalStyle = div.getAttribute('style');
+        if (originalStyle) {
+            // 执行替换
+            let newStyle = originalStyle.replace(targetRegex, '');
+            // 重新设置属性
+            div.setAttribute('style', newStyle);
+        }
+    });
+
+    console.log("替换完成：已移除链接和样式中的绝对域名前缀。");
+})();
+  
   // =========================================================================
   // 1. 基础 URL 替换功能 (对应 Go 中的 bytes.ReplaceAll)
   // =========================================================================
@@ -516,7 +550,7 @@
   }
 
   function main() {
-    console.log(1502);
+    console.log(1517);
     fixBaseUrls(); // 1. URL 替换
     injectStyles(); // 2. 样式注入
     initReloadCover(); // 3. 封面重载 (列表页)
