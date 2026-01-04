@@ -40,13 +40,10 @@
     const galleryContainer = document.getElementById('gdt');
     if (!galleryContainer) return;
 
-    // 为了严格按照“从p=0开始fetch”并“按顺序合并”的要求，
-    // 我们清空当前容器，防止p=0的内容与页面初始加载的内容重复。
-    // 这样能保证所有内容都是脚本控制按顺序加载的。
+    // 清空当前容器，确保按顺序重组
     galleryContainer.innerHTML = ''; 
 
     // 5. 循环 Fetch 并合并
-    // 必须使用 async/await 确保按页码顺序追加 (0 -> 1 -> 2...)
     for (let p = 0; p < totalPages; p++) {
         try {
             // 构建带参数的URL
@@ -63,13 +60,23 @@
             const doc = parser.parseFromString(htmlText, 'text/html');
             
             // 找到 id=gdt 的元素下的所有 children (即 <a> 标签)
-            // 提示中的HTML结构: <div id="gdt"><a...>...</a><a...>...</a></div>
             const newItems = doc.querySelectorAll('#gdt > a');
             
             if (newItems.length > 0) {
                 // 创建文档片段以减少重绘
                 const fragment = document.createDocumentFragment();
+                
                 newItems.forEach(item => {
+                    // --- 新增步骤：替换 href 属性 ---
+                    const currentHref = item.getAttribute('href');
+                    if (currentHref) {
+                        // 将 https://exhentai.org 替换为空字符串
+                        // 这通常会将绝对路径转换为相对路径 (例如 /s/hash/id)
+                        const newHref = currentHref.replace('https://exhentai.org', '');
+                        item.setAttribute('href', newHref);
+                    }
+                    // -----------------------------
+
                     fragment.appendChild(item);
                 });
                 
