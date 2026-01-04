@@ -73,7 +73,18 @@
         div.setAttribute("src", newSrc);
       }
     });
-
+    {
+      const imgs = document.querySelectorAll('img[src*="s.exhentai.org"]');
+      imgs.forEach(function (img) {
+        let originalSrc = img.getAttribute("src");
+        if (originalSrc) {
+          // 执行替换
+          let newSrc = originalSrc.replace(targetRegex, "https://ehgt.org");
+          // 重新设置属性
+          div.setAttribute("src", newSrc);
+        }
+      });
+    }
     const scripts = document.querySelectorAll('script[src*="exhentai.org"]');
     scripts.forEach(function (oldScript) {
       let originalSrc = oldScript.getAttribute("src");
@@ -605,7 +616,7 @@
   }
 
   function main() {
-    console.log(1517);
+    console.log(1543);
     fixBaseUrls(); // 1. URL 替换
     injectStyles(); // 2. 样式注入
     initReloadCover(); // 3. 封面重载 (列表页)
