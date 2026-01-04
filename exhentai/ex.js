@@ -77,12 +77,12 @@
     {
       const divs = document.querySelectorAll('div[onclick*="exhentai.org"]');
       divs.forEach(function (div) {
-        let originalStyle = div.getAttribute("style");
-        if (originalStyle) {
+        let originalOnclick = div.getAttribute("onclick");
+        if (originalOnclick) {
           // 执行替换
-          let newStyle = originalStyle.replace(targetRegex, "");
+          let newOnclick = originalOnclick.replace(targetRegex, "");
           // 重新设置属性
-          div.setAttribute("style", newStyle);
+          div.setAttribute("onclick", newOnclick);
         }
       });
     }
