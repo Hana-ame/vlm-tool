@@ -221,9 +221,9 @@
   // 4. 瀑布流 (Waterfall) 与 复制外链功能 (已适配触屏)
   // =========================================================================
   function initWaterfall() {
-    if (!location.pathname.startsWith("/s/")) {
-      return;
-    }
+
+    if (!location.pathname.startsWith("/s/")) return;
+
     (function () {
       "use strict";
 
@@ -368,6 +368,7 @@
             let nextLink = doc.getElementById("next");
             if (nextLink) {
               hn = nextLink.href; // 更新下一页
+              hn = hn.replace("https://exhentai.org", "");
             } else {
               break;
             }
@@ -515,7 +516,7 @@
   }
 
   function main() {
-    console.log(1455);
+    console.log(1502);
     fixBaseUrls(); // 1. URL 替换
     injectStyles(); // 2. 样式注入
     initReloadCover(); // 3. 封面重载 (列表页)
