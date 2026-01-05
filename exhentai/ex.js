@@ -339,7 +339,7 @@ async function () {
                         const newSrc = href + separator + "redirect_to=image";
 
                         console.log(`[替换成功] ${newSrc}`);
-                        img.src = newSrc; 
+                        img.src = newSrc.replace("https://exhentai.org/", "/"); 
                     }
                 }
             } catch (err) {
