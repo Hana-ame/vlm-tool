@@ -662,6 +662,14 @@ async function () {
     initScriptLoader(); // 5. 外部脚本加载
     initFloatingNotice(); // 6. 悬浮窗
 
-    build_rangebar();
+    const rangebar = document.getElementById('rangebar');
+    
+    // 首先确保元素存在，然后检查子元素数量
+    if (rangebar && rangebar.children.length > 0) {
+        console.log("rangebar 的子元素不为空");
+    } else if (rangebar) {
+        build_rangebar?.();
+    }
+    
   }
 })();
