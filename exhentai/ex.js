@@ -1,6 +1,10 @@
 (function () {
   "use strict";
 
+
+  base_url = "/";
+  api_url = "/api.php";
+  
   // 不让访问s.exhentai.org
   const originalOpen = XMLHttpRequest.prototype.open;
   const BLOCKED_DOMAIN = "s.exhentai.org";
