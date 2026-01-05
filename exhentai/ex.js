@@ -297,28 +297,64 @@
     // 绑定点击事件
     btn.addEventListener(
       "click",
-      async function () {
-        window.stop();
-        const replace = function (elements) {
-          for (let i = 0; i < elements.length; i++) {
-            const links = elements[i].getElementsByTagName("a");
-            for (let j = 0; j < links.length; j++) {
-              const href = links[j].href;
-              console.log(links[j]);
-              const imgs = links[j].getElementsByTagName("img");
-              for (let k = 0; k < imgs.length; k++) {
-                // 修正：确保拼接参数正确
-                const separator = href.includes("?") ? "&" : "?";
-                imgs[k].src = href + separator + "redirect_to=cover";
-              }
+async function () {
+    window.stop(); // 停止页面的其他加载项
+
+    const replace = async function (elements) {
+        // 将 HTMLCollection 转为数组，以便使用循环
+        const elArray = Array.from(elements);
+
+        // 使用 for...of 循环逐个处理 (串行处理以减少被 Ban IP 的风险)
+        // 如果想要速度更快但风险更高，可以用 map + Promise.all
+        for (const element of elArray) {
+            const link = element.querySelector("a");
+            if (!link) continue;
+
+            const galleryUrl = link.href; // 获取画廊详情页链接 /g/...
+            const img = link.querySelector("img");
+            
+            if (!img || !galleryUrl) continue;
+
+            try {
+                // 1. Fetch 请求详情页
+                const response = await fetch(galleryUrl);
+                const html = await response.text();
+
+                // 2. 解析 HTML
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, "text/html");
+
+                // 3. 根据 id="gdt" 获取容器
+                const gdtContainer = doc.getElementById("gdt");
+
+                if (gdtContainer) {
+                    // 4. 从 gdt 容器中取出第一个 <a> 标签 (/s/..../xxxxx-1)
+                    const firstPageLink = gdtContainer.querySelector("a");
+
+                    if (firstPageLink) {
+                        const href = firstPageLink.href;
+                        
+                        // 5. 拼接 ?redirect_to=image
+                        const separator = href.includes("?") ? "&" : "?";
+                        const newSrc = href + separator + "redirect_to=image";
+
+                        console.log(`[替换成功] ${newSrc}`);
+                        img.src = newSrc; 
+                    }
+                }
+            } catch (err) {
+                console.error("Fetch出错:", galleryUrl, err);
             }
-          }
-        };
-        const gl3tElements = document.getElementsByClassName("gl3t");
-        replace(gl3tElements);
-        const gl1eElements = document.getElementsByClassName("gl1e");
-        replace(gl1eElements);
-      },
+        }
+    };
+
+    // 获取并处理两种常见的列表元素类名
+    const gl3tElements = document.getElementsByClassName("gl3t");
+    await replace(gl3tElements); // 等待这一批处理完
+
+    const gl1eElements = document.getElementsByClassName("gl1e");
+    await replace(gl1eElements);
+},
       false
     );
   }
