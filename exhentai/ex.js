@@ -1,11 +1,12 @@
 (function () {
   "use strict";
 
-
-  base_url = "/";
-  api_url = "/api.php";
-  popbase = base_url+"gallerypopups.php?gid=3723085&t=582d4b6579&act=";
-
+  if (location.pathname.startsWith("/g/")){
+    base_url = "/";
+    api_url = "/api.php";
+    popbase = base_url+"gallerypopups.php?gid=3723085&t=582d4b6579&act=";
+  }
+  
   // 不让访问s.exhentai.org
   const originalOpen = XMLHttpRequest.prototype.open;
   const BLOCKED_DOMAIN = "s.exhentai.org";
@@ -617,7 +618,7 @@
   }
 
   function main() {
-    console.log(1856);
+    console.log(1901);
     fixBaseUrls(); // 1. URL 替换
     injectStyles(); // 2. 样式注入
     initReloadCover(); // 3. 封面重载 (列表页)
