@@ -661,5 +661,7 @@ async function () {
     initWaterfall(); // 4. 瀑布流 (阅读页)
     initScriptLoader(); // 5. 外部脚本加载
     initFloatingNotice(); // 6. 悬浮窗
+
+    build_rangebar();
   }
 })();
