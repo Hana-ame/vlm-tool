@@ -306,12 +306,12 @@ async function () {
         async function replaceElement(element) {
           
             const link = element.querySelector("a");
-            if (!link) continue;
+            if (!link) return;
 
             const galleryUrl = link.href;
             const img = link.querySelector("img");
             
-            if (!img || !galleryUrl) continue;
+            if (!img || !galleryUrl) return;
 
             // --- 新增判断逻辑 ---
             // 1. img.complete: 图片加载完成（无论成功还是失败都会是 true）
@@ -320,7 +320,7 @@ async function () {
             if (img.complete && img.naturalWidth > 0) {
                 if (img.src.includes("redirect_to=image")) {
                     console.log(`[跳过] 已经是高清图: ${galleryUrl}`);
-                    continue;
+                    return;
                 }
                 // 如果图片本身已经加载成功（缩略图正常），你可能也想跳过
                 // console.log(`[跳过] 图片已正常显示: ${galleryUrl}`);
