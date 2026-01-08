@@ -664,8 +664,8 @@ async function () {
     main();
   }
 
-  function main() {
-    console.log(185);
+  async function main() {
+    console.log(2238);
     fixBaseUrls(); // 1. URL 替换
     injectStyles(); // 2. 样式注入
     initReloadCover(); // 3. 封面重载 (列表页)
@@ -690,6 +690,7 @@ function checkAndBuildRangebar() {
         } else { // rangebar 存在，但子元素为空
             console.log("rangebar 存在但子元素为空，尝试构建...");
             build_rangebar?.();
+            fixBaseUrls(); // 1. URL 替换
         }
     } else { // rangebar 不存在 (null 或 undefined)
         console.log("rangebar 不存在，将在 0.2 秒后重试...");
