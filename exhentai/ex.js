@@ -303,7 +303,8 @@ async function () {
     const replace = async function (elements) {
         const elArray = Array.from(elements);
 
-        for (const element of elArray) {
+        async function replaceElement(element) {
+          
             const link = element.querySelector("a");
             if (!link) continue;
 
@@ -358,6 +359,9 @@ async function () {
                 console.error("Fetch出错:", galleryUrl, err);
             }
         }
+              for (const element of elArray) {
+                replaceElement(element);
+              }
     };
 
     const gl3tElements = document.getElementsByClassName("gl3t");
