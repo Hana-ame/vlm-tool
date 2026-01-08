@@ -298,48 +298,60 @@
     btn.addEventListener(
       "click",
 async function () {
-    window.stop(); // 停止页面的其他加载项
-
+    // window.stop(); // 注意：如果你想检查图片是否加载成功，建议注释掉 window.stop()，否则所有图片都会停止加载
+    
     const replace = async function (elements) {
-        // 将 HTMLCollection 转为数组，以便使用循环
         const elArray = Array.from(elements);
 
-        // 使用 for...of 循环逐个处理 (串行处理以减少被 Ban IP 的风险)
-        // 如果想要速度更快但风险更高，可以用 map + Promise.all
         for (const element of elArray) {
             const link = element.querySelector("a");
             if (!link) continue;
 
-            const galleryUrl = link.href; // 获取画廊详情页链接 /g/...
+            const galleryUrl = link.href;
             const img = link.querySelector("img");
             
             if (!img || !galleryUrl) continue;
 
+            // --- 新增判断逻辑 ---
+            // 1. img.complete: 图片加载完成（无论成功还是失败都会是 true）
+            // 2. img.naturalWidth > 0: 图片的实际宽度大于 0，说明数据有效且非破损图
+            // 3. (可选) 检查 src 是否已经包含跳转参数，避免重复处理
+            if (img.complete && img.naturalWidth > 0) {
+                if (img.src.includes("redirect_to=image")) {
+                    console.log(`[跳过] 已经是高清图: ${galleryUrl}`);
+                    continue;
+                }
+                // 如果图片本身已经加载成功（缩略图正常），你可能也想跳过
+                // console.log(`[跳过] 图片已正常显示: ${galleryUrl}`);
+                // continue; 
+            }
+            // --------------------
+
             try {
-                // 1. Fetch 请求详情页
+                // 如果图片未加载，或加载失败 (naturalWidth === 0)，则执行 fetch
                 const response = await fetch(galleryUrl);
                 const html = await response.text();
 
-                // 2. 解析 HTML
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(html, "text/html");
-
-                // 3. 根据 id="gdt" 获取容器
                 const gdtContainer = doc.getElementById("gdt");
 
                 if (gdtContainer) {
-                    // 4. 从 gdt 容器中取出第一个 <a> 标签 (/s/..../xxxxx-1)
                     const firstPageLink = gdtContainer.querySelector("a");
-
                     if (firstPageLink) {
                         const href = firstPageLink.href;
-                        
-                        // 5. 拼接 ?redirect_to=image
                         const separator = href.includes("?") ? "&" : "?";
                         const newSrc = href + separator + "redirect_to=image";
 
+                        // 替换图片并打印日志
                         console.log(`[替换成功] ${newSrc}`);
+                        // 建议直接用完整链接，或者根据站内规则替换
                         img.src = newSrc.replace("https://exhentai.org/", "/"); 
+                        
+                        // 为了防止 window.stop() 干扰后续新图加载，可以手动触发加载
+                        img.onerror = function() {
+                            console.error("图片替换后加载失败:", newSrc);
+                        };
                     }
                 }
             } catch (err) {
@@ -348,14 +360,12 @@ async function () {
         }
     };
 
-    // 获取并处理两种常见的列表元素类名
     const gl3tElements = document.getElementsByClassName("gl3t");
-    await replace(gl3tElements); // 等待这一批处理完
+    await replace(gl3tElements);
 
     const gl1eElements = document.getElementsByClassName("gl1e");
     await replace(gl1eElements);
-},
-      false
+}      false
     );
   }
   // =========================================================================
