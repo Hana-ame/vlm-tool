@@ -365,7 +365,8 @@ async function () {
 
     const gl1eElements = document.getElementsByClassName("gl1e");
     await replace(gl1eElements);
-}      false
+},
+      false
     );
   }
   // =========================================================================
