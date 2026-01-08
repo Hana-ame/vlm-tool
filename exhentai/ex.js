@@ -608,8 +608,8 @@ async function () {
 
     // ehsyringe
     if (localStorage.getItem("ehsyringe") !== "false") {
-      loadScript("https://config.810114.xyz/exhentai/gm-polyfill.js");
-      loadScript("https://config.810114.xyz/exhentai/EhSyringe.user.js");
+      loadScript("/exhentai/gm-polyfill.js");
+      loadScript("/exhentai/EhSyringe.user.js");
     }
 
     // gscript
@@ -617,7 +617,7 @@ async function () {
       localStorage.getItem("gscript") !== "false" &&
       location.pathname.startsWith("/g/")
     ) {
-      loadScript("https://config.810114.xyz/exhentai/gscript.js");
+      loadScript("/exhentai/gscript.js");
     }
 
     // reader
@@ -625,7 +625,7 @@ async function () {
       localStorage.getItem("reader") !== "false" &&
       location.pathname.startsWith("/g/")
     ) {
-      loadScript("https://config.810114.xyz/exhentai/reader.js");
+      loadScript("/exhentai/reader.js");
     }
   }
 
@@ -669,7 +669,7 @@ async function () {
   }
 
   async function main() {
-    console.log(2316);
+    console.log(2331);
     // fixBaseUrls(); // 1. URL 替换
     injectStyles(); // 2. 样式注入
     initReloadCover(); // 3. 封面重载 (列表页)
