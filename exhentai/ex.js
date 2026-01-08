@@ -688,7 +688,8 @@ function checkAndBuildRangebar() {
 }
 
 // 首次调用该函数以启动逻辑
-checkAndBuildRangebar();
+setTimeout(checkAndBuildRangebar, 1500);
+
 
 
     
