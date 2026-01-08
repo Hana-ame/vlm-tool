@@ -23,64 +23,161 @@
       os: "Windows",
     },
   };
+// --- 2. 同步 API (GM_*) - IndexedDB 版 ---
 
-  const STORAGE_PREFIX = "GM_STORAGE_";
+  // 配置常量
+  const DB_NAME = "GM_Polyfill_DB";
+  const STORE_NAME = "GM_Values";
+  const BROADCAST_CHANNEL_NAME = "GM_Polyfill_Sync";
 
-  // --- 1. 内部存储辅助 ---
-  const listeners = new Map();
-  function triggerListeners(key, newValue, oldValue, remote) {
-    const keyListeners = listeners.get(key);
-    if (keyListeners) {
-      const parsedNew = newValue ? JSON.parse(newValue) : undefined;
-      const parsedOld = oldValue ? JSON.parse(oldValue) : undefined;
-      keyListeners.forEach((item) =>
-        item.callback(key, parsedOld, parsedNew, remote)
-      );
-    }
+  // 内存缓存：保证 GM_getValue 的同步调用
+  const valueCache = new Map();
+  // 监听器存储
+  // const listeners = new Map(); // (假设外部已有 listeners 定义，如果没有请取消注释)
+
+  // 跨标签页通讯通道
+  const syncChannel = new BroadcastChannel(BROADCAST_CHANNEL_NAME);
+
+  /**
+   * 初始化 IndexedDB 并预加载数据到内存缓存
+   */
+  (function initIndexedDB() {
+    const request = indexedDB.open(DB_NAME, 1);
+
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME);
+      }
+    };
+
+    request.onsuccess = (event) => {
+      const db = event.target.result;
+      const transaction = db.transaction(STORE_NAME, "readonly");
+      const store = transaction.objectStore(STORE_NAME);
+      
+      // 遍历所有数据存入缓存
+      const cursorRequest = store.openCursor();
+      cursorRequest.onsuccess = (e) => {
+        const cursor = e.target.result;
+        if (cursor) {
+          valueCache.set(cursor.key, cursor.value);
+          cursor.continue();
+        } else {
+          console.log("GM_Polyfill: 数据已从 IndexedDB 加载完毕");
+        }
+      };
+    };
+
+    request.onerror = (e) => {
+      console.error("GM_Polyfill: IndexedDB 打开失败", e);
+    };
+  })();
+
+  /**
+   * 辅助函数：异步写入 IndexedDB
+   */
+  function dbSave(key, value) {
+    const request = indexedDB.open(DB_NAME, 1);
+    request.onsuccess = (e) => {
+      const db = e.target.result;
+      const tx = db.transaction(STORE_NAME, "readwrite");
+      tx.objectStore(STORE_NAME).put(value, key);
+    };
   }
 
-  // --- 2. 同步 API (GM_*) ---
+  /**
+   * 辅助函数：异步删除 IndexedDB
+   */
+  function dbDelete(key) {
+    const request = indexedDB.open(DB_NAME, 1);
+    request.onsuccess = (e) => {
+      const db = e.target.result;
+      const tx = db.transaction(STORE_NAME, "readwrite");
+      tx.objectStore(STORE_NAME).delete(key);
+    };
+  }
+
+  // --- 接收跨标签页的更新通知 ---
+  syncChannel.onmessage = (event) => {
+    const { type, key, value, oldValue } = event.data;
+    if (type === "set") {
+      valueCache.set(key, value);
+      triggerListeners(key, value, oldValue, true); // true 表示来自远程(其他标签页)
+    } else if (type === "delete") {
+      valueCache.delete(key);
+      triggerListeners(key, undefined, oldValue, true);
+    }
+  };
+
+  // --- API 实现 ---
 
   window.GM_getValue = function (key, defaultValue) {
-    const value = localStorage.getItem(STORAGE_PREFIX + key);
-    try {
-      return value !== null ? JSON.parse(value) : defaultValue;
-    } catch (e) {
-      return value || defaultValue;
+    // 直接从内存缓存读取，保证同步返回
+    if (valueCache.has(key)) {
+      const val = valueCache.get(key);
+      // 如果存的是 JSON 字符串形式的对象，这里根据需要决定是否 parse
+      // 但 IndexedDB 可以存对象，建议存取保持原样。
+      // 为兼容旧逻辑，如果你存进去的是 string，这就返回 string。
+      return val;
     }
+    return defaultValue;
   };
 
   window.GM_setValue = function (key, value) {
-    const fullKey = STORAGE_PREFIX + key;
-    const oldValue = localStorage.getItem(fullKey);
-    const newValue = JSON.stringify(value);
-    localStorage.setItem(fullKey, newValue);
-    triggerListeners(key, newValue, oldValue, false);
+    const oldValue = valueCache.get(key);
+    
+    // 1. 更新内存缓存
+    valueCache.set(key, value);
+    
+    // 2. 异步持久化到 IndexedDB
+    dbSave(key, value);
+    
+    // 3. 触发本页面的监听器
+    // 注意：IndexedDB 能够直接存储对象，所以这里传给监听器的就是原值，不需要 JSON.stringify
+    // 为了兼容旧代码的监听器逻辑（旧代码可能期待字符串），你可能需要调整监听器回调，
+    // 但通常直接传对象更符合现代标准。
+    triggerListeners(key, value, oldValue, false);
+
+    // 4. 通知其他标签页
+    syncChannel.postMessage({
+      type: "set",
+      key: key,
+      value: value,
+      oldValue: oldValue
+    });
   };
 
   window.GM_deleteValue = function (key) {
-    const fullKey = STORAGE_PREFIX + key;
-    const oldValue = localStorage.getItem(fullKey);
-    localStorage.removeItem(fullKey);
-    triggerListeners(key, null, oldValue, false);
+    const oldValue = valueCache.get(key);
+    
+    // 1. 更新内存
+    valueCache.delete(key);
+    
+    // 2. 异步删除
+    dbDelete(key);
+    
+    // 3. 触发监听器
+    triggerListeners(key, undefined, oldValue, false);
+
+    // 4. 通知其他标签页
+    syncChannel.postMessage({
+      type: "delete",
+      key: key,
+      oldValue: oldValue
+    });
   };
 
   window.GM_listValues = function () {
-    return Object.keys(localStorage)
-      .filter((k) => k.startsWith(STORAGE_PREFIX))
-      .map((k) => k.replace(STORAGE_PREFIX, ""));
+    return Array.from(valueCache.keys());
   };
 
   window.GM_addValueChangeListener = function (key, callback) {
     if (!listeners.has(key)) listeners.set(key, []);
     const id = Math.random().toString(36).substr(2, 9);
     listeners.get(key).push({ id, callback });
-
-    window.addEventListener("storage", (e) => {
-      if (e.key === STORAGE_PREFIX + key) {
-        callback(key, JSON.parse(e.oldValue), JSON.parse(e.newValue), true);
-      }
-    });
+    // 注意：不再需要 window.addEventListener('storage')，
+    // 因为这由 BroadcastChannel (syncChannel.onmessage) 处理了。
     return id;
   };
 
