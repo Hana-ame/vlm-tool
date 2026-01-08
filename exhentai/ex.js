@@ -298,7 +298,7 @@
     btn.addEventListener(
       "click",
 async function () {
-    // window.stop(); // 注意：如果你想检查图片是否加载成功，建议注释掉 window.stop()，否则所有图片都会停止加载
+    window.stop(); // 注意：如果你想检查图片是否加载成功，建议注释掉 window.stop()，否则所有图片都会停止加载
     
     const replace = async function (elements) {
         const elArray = Array.from(elements);
