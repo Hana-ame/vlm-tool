@@ -662,14 +662,35 @@ async function () {
     initScriptLoader(); // 5. 外部脚本加载
     initFloatingNotice(); // 6. 悬浮窗
 
+
+// 假设 rangebar 是一个在当前作用域内可访问的变量，
+// 可能是通过 document.getElementById 或其他方式获取的DOM元素引用。
+// 同样，build_rangebar 也是一个在当前作用域内可访问的函数。
+
+function checkAndBuildRangebar() {
+    // 重新评估 rangebar 的值，以防它在 DOM 加载后才出现
+    // 如果 rangebar 变量是动态获取的，例如每次都需要查找DOM，
+    // 则可以在这里重新获取它：
     const rangebar = document.getElementById('rangebar');
-    
-    // 首先确保元素存在，然后检查子元素数量
-    if (rangebar && rangebar.children.length > 0) {
-        console.log("rangebar 的子元素不为空");
-    } else if (rangebar) {
-        build_rangebar?.();
+
+    if (rangebar) { // rangebar 存在 (不为 null, undefined, false, 0, "" 等)
+        if (rangebar.children.length > 0) {
+            console.log("rangebar 的子元素不为空");
+        } else { // rangebar 存在，但子元素为空
+            console.log("rangebar 存在但子元素为空，尝试构建...");
+            build_rangebar?.();
+        }
+    } else { // rangebar 不存在 (null 或 undefined)
+        console.log("rangebar 不存在，将在 0.2 秒后重试...");
+        // 间隔0.2秒后再次运行此逻辑
+        setTimeout(checkAndBuildRangebar, 200); // 200毫秒 = 0.2秒
     }
+}
+
+// 首次调用该函数以启动逻辑
+checkAndBuildRangebar();
+
+
     
   }
 })();
