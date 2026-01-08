@@ -654,7 +654,7 @@ async function () {
   }
 
   function main() {
-    console.log(1901);
+    console.log(1707);
     fixBaseUrls(); // 1. URL 替换
     injectStyles(); // 2. 样式注入
     initReloadCover(); // 3. 封面重载 (列表页)
@@ -673,7 +673,7 @@ function checkAndBuildRangebar() {
     // 则可以在这里重新获取它：
     const rangebar = document.getElementById('rangebar');
 
-    if (rangebar) { // rangebar 存在 (不为 null, undefined, false, 0, "" 等)
+    if (rangebar && build_rangebar) { // rangebar 存在 (不为 null, undefined, false, 0, "" 等)
         if (rangebar.children.length > 0) {
             console.log("rangebar 的子元素不为空");
         } else { // rangebar 存在，但子元素为空
