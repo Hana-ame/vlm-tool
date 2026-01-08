@@ -665,7 +665,7 @@ async function () {
   }
 
   function main() {
-    console.log(1707);
+    console.log(185);
     fixBaseUrls(); // 1. URL 替换
     injectStyles(); // 2. 样式注入
     initReloadCover(); // 3. 封面重载 (列表页)
