@@ -628,6 +628,12 @@ async function () {
     ) {
       loadScript("/exhentai/reader.js");
     }
+    if (
+      localStorage.getItem("reader-test") === "true" &&
+      location.pathname.startsWith("/g/")
+    ) {
+      loadScript("/exhentai/reader-test.js");
+    }
   }
 
   // =========================================================================
