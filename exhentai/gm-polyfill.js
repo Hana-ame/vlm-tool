@@ -33,7 +33,7 @@
   // 内存缓存：保证 GM_getValue 的同步调用
   const valueCache = new Map();
   // 监听器存储
-  // const listeners = new Map(); // (假设外部已有 listeners 定义，如果没有请取消注释)
+  const listeners = new Map(); // (假设外部已有 listeners 定义，如果没有请取消注释)
 
   // 跨标签页通讯通道
   const syncChannel = new BroadcastChannel(BROADCAST_CHANNEL_NAME);
