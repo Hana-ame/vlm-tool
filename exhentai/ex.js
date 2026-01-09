@@ -597,6 +597,7 @@ async function () {
     const loadScript = (src) => {
       const script = document.createElement("script");
       script.src = src;
+        script.defer = true; // This adds the defer attribute
       document.body.appendChild(script);
     };
 
